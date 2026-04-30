@@ -23,6 +23,7 @@ func NewServer() *Server {
 
 func (s *Server) InitAndServe(port int) {
 	s.mux.HandleFunc("POST /upload", s.HandleUpload)
+	s.mux.HandleFunc("POST /compute", s.HandleCompute)
 
 	log.Printf("Listening on :%d\n", port)
 

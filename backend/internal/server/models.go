@@ -37,7 +37,7 @@ func NewComputeResponse(table *compute.CorrelationTable) *ComputeResponse {
 	return &ComputeResponse{
 		YMids: yMids,
 		XMids: xMids,
-		// Copy
+		// Safe copy
 		Frequencies:      append([]float64(nil), table.Frequencies.RawMatrix().Data...),
 		XMarginal:        append([]float64(nil), table.XMarginal.RawVector().Data...),
 		YMarginal:        append([]float64(nil), table.YMarginal.RawVector().Data...),
