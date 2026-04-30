@@ -1,7 +1,10 @@
 package main
 
-import "fmt"
+import (
+	"github.com/ItakawaM/docker-time-analysis/internal/server"
+)
 
 func main() {
-	fmt.Println("Work in Progress...")
+	s := server.NewServer()
+	s.InitAndServe(8080)
 }
