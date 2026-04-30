@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -73,17 +74,17 @@ func (s *Server) HandleCompute(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if request.SampleSize <= 0 {
-		http.Error(w, "Sample size must be positive", http.StatusBadRequest)
-		return
-	}
-
 	s.mu.RLock()
 	data := s.data
 	s.mu.RUnlock()
 
 	if len(data) == 0 {
 		http.Error(w, "No data loaded", http.StatusBadRequest)
+		return
+	}
+
+	if request.SampleSize <= 0 || request.SampleSize >= len(data) {
+		http.Error(w, fmt.Sprintf("Sample size is out of bounds: %d", request.SampleSize), http.StatusBadRequest)
 		return
 	}
 

@@ -19,6 +19,10 @@ func GetSample[T any](data []T, size int) ([]T, error) {
 		return nil, fmt.Errorf("sample size must be positive, got = %d", size)
 	}
 
+	if size >= len(data) {
+		return nil, fmt.Errorf("sample size is out of bounds, got = %d bound = %d", size, len(data))
+	}
+
 	sample := make([]T, len(data))
 	copy(sample, data)
 
