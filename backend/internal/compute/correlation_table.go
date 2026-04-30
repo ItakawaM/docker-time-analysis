@@ -48,7 +48,7 @@ type CorrelationTable struct {
 	ConditionalMeanY *mat.VecDense
 }
 
-func NewCorrelationTable(data []*parse.DockerEntry, rows int, columns int) (*CorrelationTable, error) {
+func NewCorrelationTable(data []*parse.DockerEntry) (*CorrelationTable, error) {
 	minX, maxX := data[0].DockerCount, data[0].DockerCount
 	minY, maxY := data[0].StartupTime, data[0].StartupTime
 
@@ -67,17 +67,18 @@ func NewCorrelationTable(data []*parse.DockerEntry, rows int, columns int) (*Cor
 		}
 	}
 
-	xIntervals, err := BuildIntervals(minX, maxX, columns)
+	intervals, _ := SturgesCoeff(len(data))
+	xIntervals, err := BuildIntervals(minX, maxX, intervals)
 	if err != nil {
 		return nil, err
 	}
 
-	yIntervals, err := BuildIntervals(minY, maxY, rows)
+	yIntervals, err := BuildIntervals(minY, maxY, intervals)
 	if err != nil {
 		return nil, err
 	}
 
-	freq := mat.NewDense(rows, columns, nil)
+	freq := mat.NewDense(intervals, intervals, nil)
 	table := &CorrelationTable{
 		XIntervals:       xIntervals,
 		YIntervals:       yIntervals,

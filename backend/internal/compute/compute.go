@@ -14,14 +14,18 @@ func SturgesCoeff(n int) (int, error) {
 	return int(math.Ceil(1.0 + 3.322*math.Log10(float64(n)))), nil
 }
 
-func GetSample[T any](data []T, size uint) []T {
+func GetSample[T any](data []T, size int) ([]T, error) {
+	if size <= 0 {
+		return nil, fmt.Errorf("sample size must be positive, got = %d", size)
+	}
+
 	sample := make([]T, len(data))
 	copy(sample, data)
 
 	for i := range size {
-		j := i + rand.UintN(uint(len(sample))-i)
+		j := i + rand.IntN(len(sample)-i)
 		sample[i], sample[j] = sample[j], sample[i]
 	}
 
-	return sample[:size]
+	return sample[:size], nil
 }
