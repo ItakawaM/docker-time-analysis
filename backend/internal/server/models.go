@@ -4,23 +4,23 @@ import "github.com/ItakawaM/docker-time-analysis/internal/compute"
 
 type UploadResponse struct {
 	Message    string `json:"message"`
-	ParsedRows int    `json:"parsed_rows"`
+	ParsedRows int    `json:"parsedRows"`
 }
 
 type ComputeRequest struct {
-	SampleSize int `json:"sample_size"`
+	SampleSize int `json:"sampleSize"`
 }
 
 type ComputeResponse struct {
-	YMids []float64 `json:"y_mids"`
-	XMids []float64 `json:"x_mids"`
+	YMids []float64 `json:"yMids"`
+	XMids []float64 `json:"xMids"`
 
 	Frequencies []float64 `json:"frequencies"`
 
-	XMarginal []float64 `json:"x_marginal"`
-	YMarginal []float64 `json:"y_marginal"`
+	XMarginal []float64 `json:"xMarginal"`
+	YMarginal []float64 `json:"yMarginal"`
 
-	ConditionalMeanY []float64 `json:"conditional_mean_y"`
+	ConditionalMeanY []float64 `json:"conditionalMeanY"`
 }
 
 func NewComputeResponse(table *compute.CorrelationTable) *ComputeResponse {
