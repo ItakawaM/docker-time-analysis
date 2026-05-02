@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { ComputeResponse, UploadResponse } from './lib/api/models';
+	import CorrelationTable from './lib/components/CorrelationTable.svelte';
 	import CSVFileInput from './lib/components/CSVFileInput.svelte';
 	import SampleSizeSlider from './lib/components/SampleSizeSlider.svelte';
 
@@ -10,6 +11,7 @@
 
 	function handleUploadError(): void {
 		uploadResponse = null;
+		computeResponse = null;
 	}
 
 	let computeResponse: ComputeResponse | null = $state(null);
@@ -34,13 +36,23 @@
 
 {#if uploadResponse}
 	<hr />
-
+	<p class="instructions">Select the amount of entries you would like to sample</p>
 	<section>
 		<SampleSizeSlider
 			totalRows={uploadResponse.parsedRows}
 			onSuccess={handleComputeSuccess}
 			onError={handleComputeError}
 		/>
+	</section>
+{/if}
+
+{#if computeResponse}
+	<hr />
+	<p class="instructions">
+		Response time (ms) vs. Docker container count — joint frequency distribution
+	</p>
+	<section>
+		<CorrelationTable data={computeResponse} />
 	</section>
 {/if}
 
