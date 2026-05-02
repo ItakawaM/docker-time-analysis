@@ -1,10 +1,11 @@
-export async function postJSON<T>(url: string, data: any): Promise<T> {
+export async function postJSON<T>(url: string, data: any, signal?: AbortSignal): Promise<T> {
 	const response = await fetch(url, {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json'
 		},
-		body: JSON.stringify(data)
+		body: JSON.stringify(data),
+		signal
 	});
 
 	if (!response.ok) {

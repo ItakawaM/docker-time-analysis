@@ -8,6 +8,9 @@ export async function postUpload(file: File): Promise<UploadResponse> {
 	return postFormData<UploadResponse>('/api/upload', formData);
 }
 
-export async function postCompute(data: ComputeRequest): Promise<ComputeResponse> {
-	return postJSON<ComputeResponse>('/api/compute', data);
+export async function postCompute(
+	data: ComputeRequest,
+	signal: AbortSignal
+): Promise<ComputeResponse> {
+	return postJSON<ComputeResponse>('/api/compute', data, signal);
 }
