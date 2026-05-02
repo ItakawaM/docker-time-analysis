@@ -24,19 +24,20 @@
 		errorMessage = '';
 		successMessage = '';
 
-		try {
-			const response = await postUpload(file);
-			successMessage = `Successfully parsed ${response.parsedRows} rows`;
-			status = 'success';
+		postUpload(file)
+			.then((data) => {
+				successMessage = `Successfully parsed ${data.parsedRows} rows`;
+				status = 'success';
 
-			onSuccess?.(response);
-		} catch (err) {
-			const error = err instanceof Error ? err : new Error('Unknown error');
-			errorMessage = error.message;
-			status = 'error';
+				onSuccess?.(data);
+			})
+			.catch((err) => {
+				const error = err instanceof Error ? err : new Error('Unknown error');
+				errorMessage = error.message;
+				status = 'error';
 
-			onError?.();
-		}
+				onError?.();
+			});
 	}
 </script>
 
@@ -69,6 +70,7 @@
 	}
 
 	input[type='file'] {
+		border-radius: 0.5rem;
 		border: 1px solid light-dark(#d0d0d0, #3a3a3a);
 		background-color: light-dark(#ffffff, #1e1e1e);
 		color: inherit;
