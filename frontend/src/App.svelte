@@ -2,6 +2,7 @@
 	import type { ComputeResponse, UploadResponse } from './lib/api/models';
 	import CorrelationTable from './lib/components/CorrelationTable.svelte';
 	import CSVFileInput from './lib/components/CSVFileInput.svelte';
+	import RegressionPlot from './lib/components/RegressionPlot.svelte';
 	import SampleSizeSlider from './lib/components/SampleSizeSlider.svelte';
 
 	let uploadResponse: UploadResponse | null = $state(null);
@@ -53,6 +54,7 @@
 	</p>
 	<section>
 		<CorrelationTable data={computeResponse} />
+		<RegressionPlot data={computeResponse} />
 	</section>
 {/if}
 
