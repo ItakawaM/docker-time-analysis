@@ -7,7 +7,7 @@ export type ComputeRequest = {
 	sampleSize: number;
 };
 
-export type ComputeResponse = {
+export type TableData = {
 	yMids: number[];
 	xMids: number[];
 
@@ -17,4 +17,17 @@ export type ComputeResponse = {
 	yMarginal: number[];
 
 	conditionalMeanY: number[];
+};
+
+export type GraphData = {
+	yPoints: number[];
+	xPoints: number[];
+
+	alphaCoefficient: number;
+	betaCoefficient: number;
+};
+
+export type ComputeResponse = {
+	tableData: TableData;
+	graphData: GraphData;
 };
