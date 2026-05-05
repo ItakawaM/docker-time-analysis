@@ -2,8 +2,6 @@ package compute
 
 import (
 	"fmt"
-	"os"
-	"text/tabwriter"
 
 	"github.com/ItakawaM/docker-time-analysis/internal/parse"
 	"gonum.org/v1/gonum/mat"
@@ -143,33 +141,29 @@ func (ct *CorrelationTable) calculateConditionalMean() {
 	}
 }
 
-func (ct *CorrelationTable) Print() {
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	defer w.Flush()
-
-	fmt.Fprintf(w, "Y \\ X")
-	for _, x := range ct.XIntervals {
-		fmt.Fprintf(w, "\t%.1f", x.Mid)
-	}
-	fmt.Fprintf(w, "\t%s\n", "my_j")
-
-	for j, y := range ct.YIntervals {
-		fmt.Fprintf(w, "%.1f", y.Mid)
-		for i := range ct.XIntervals {
-			fmt.Fprintf(w, "\t%.0f", ct.Frequencies.At(j, i))
-		}
-		fmt.Fprintf(w, "\t%d\n", int(ct.YMarginal.AtVec(j)))
+func (ct *CorrelationTable) GetXMids() []float64 {
+	xMids := make([]float64, len(ct.XIntervals))
+	for i := range xMids {
+		xMids[i] = ct.XIntervals[i].Mid
 	}
 
-	fmt.Fprintf(w, "nx_i")
-	for i := range ct.XIntervals {
-		fmt.Fprintf(w, "\t%d", int(ct.XMarginal.AtVec(i)))
-	}
-	fmt.Fprintf(w, "\n")
+	return xMids
+}
 
-	fmt.Fprintf(w, "ȳ(xᵢ)")
-	for i := range ct.XIntervals {
-		fmt.Fprintf(w, "\t%.2f", ct.ConditionalMeanY.AtVec(i))
+func (ct *CorrelationTable) GetYMids() []float64 {
+	yMids := make([]float64, len(ct.YIntervals))
+	for i := range yMids {
+		yMids[i] = ct.YIntervals[i].Mid
 	}
-	fmt.Fprintf(w, "\n")
+
+	return yMids
+}
+
+func (ct *CorrelationTable) GetConditionalMeanY() []float64 {
+	conditionalY := make([]float64, len(ct.ConditionalMeanY.RawVector().Data))
+	for i := range conditionalY {
+		conditionalY[i] = ct.ConditionalMeanY.AtVec(i)
+	}
+
+	return conditionalY
 }
