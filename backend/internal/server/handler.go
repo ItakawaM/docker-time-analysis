@@ -42,6 +42,11 @@ func (s *Server) HandleUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(parsedData) < 50 {
+		http.Error(w, "The .csv file has to contain at least 50 entries", http.StatusBadRequest)
+		return
+	}
+
 	s.mu.Lock()
 	s.data = parsedData
 	s.mu.Unlock()
@@ -83,7 +88,7 @@ func (s *Server) HandleCompute(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if request.SampleSize <= 0 || request.SampleSize >= len(data) {
+	if request.SampleSize < 50 || request.SampleSize > len(data) {
 		http.Error(w, fmt.Sprintf("Sample size is out of bounds: %d", request.SampleSize), http.StatusBadRequest)
 		return
 	}
