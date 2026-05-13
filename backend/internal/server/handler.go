@@ -8,7 +8,6 @@ import (
 
 	"github.com/ItakawaM/docker-time-analysis/internal/compute"
 	"github.com/ItakawaM/docker-time-analysis/internal/parse"
-	"gonum.org/v1/gonum/stat"
 )
 
 func (s *Server) HandleUpload(w http.ResponseWriter, r *http.Request) {
@@ -106,17 +105,11 @@ func (s *Server) HandleCompute(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	xMids := table.GetXMids()
-	weights := make([]float64, len(xMids))
-	for i := range weights {
-		weights[i] = table.XMarginal.AtVec(i)
-	}
-
-	beta, alpha := stat.LinearRegression(xMids, table.GetYMids(), weights, false)
+	alpha, beta, rSquared := table.ComputeLinearRegression()
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(NewComputeResponse(sample, table, alpha, beta)); err != nil {
+	if err := json.NewEncoder(w).Encode(NewComputeResponse(sample, table, alpha, beta, rSquared)); err != nil {
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 	}
 }

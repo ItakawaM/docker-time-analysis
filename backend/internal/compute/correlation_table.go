@@ -5,6 +5,7 @@ import (
 
 	"github.com/ItakawaM/docker-time-analysis/internal/parse"
 	"gonum.org/v1/gonum/mat"
+	"gonum.org/v1/gonum/stat"
 )
 
 type Interval struct {
@@ -159,6 +160,15 @@ func (ct *CorrelationTable) GetYMids() []float64 {
 	return yMids
 }
 
+func (ct *CorrelationTable) GetXMarginals() []float64 {
+	xMarginals := make([]float64, len(ct.XMarginal.RawVector().Data))
+	for i := range xMarginals {
+		xMarginals[i] = ct.XMarginal.AtVec(i)
+	}
+
+	return xMarginals
+}
+
 func (ct *CorrelationTable) GetConditionalMeanY() []float64 {
 	conditionalY := make([]float64, len(ct.ConditionalMeanY.RawVector().Data))
 	for i := range conditionalY {
@@ -166,4 +176,35 @@ func (ct *CorrelationTable) GetConditionalMeanY() []float64 {
 	}
 
 	return conditionalY
+}
+
+func (table *CorrelationTable) ComputeLinearRegression() (alpha float64, beta float64, rSquared float64) {
+	x := table.GetXMids()
+	y := table.GetConditionalMeanY()
+	weights := table.GetXMarginals()
+
+	beta, alpha = stat.LinearRegression(x, y, weights, false)
+
+	yMean := stat.Mean(y, weights)
+
+	var Q float64  // total variation
+	var Qo float64 // residual variation
+
+	for i := range x {
+		yi := y[i]
+		ni := weights[i]
+
+		// theoretical value from regression
+		yTheoretical := beta + alpha*x[i]
+
+		diffTotal := yi - yMean
+		Q += ni * diffTotal * diffTotal
+
+		diffResidual := yi - yTheoretical
+		Qo += ni * diffResidual * diffResidual
+	}
+
+	rSquared = 1.0 - Qo/Q
+
+	return
 }

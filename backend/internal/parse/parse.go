@@ -11,8 +11,8 @@ import (
 )
 
 type DockerEntry struct {
-	DockerCount float64 `json:"docker_count" csv:"n_containers"`
-	StartupTime float64 `json:"startup_time" csv:"startup_ms"`
+	DockerCount float64 `json:"dockerCount" csv:"n_containers"`
+	StartupTime float64 `json:"startupTime" csv:"startup_ms"`
 }
 
 func LoadDataFromFolder(path string) ([]*DockerEntry, error) {

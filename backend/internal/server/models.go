@@ -19,6 +19,7 @@ type GraphData struct {
 	XPoints          []float64 `json:"xPoints"`
 	AlphaCoefficient float64   `json:"alphaCoefficient"`
 	BetaCoefficient  float64   `json:"betaCoefficient"`
+	RSquared         float64   `json:"rSquared"`
 }
 
 type TableData struct {
@@ -38,7 +39,7 @@ type ComputeResponse struct {
 	GraphData GraphData `json:"graphData"`
 }
 
-func NewComputeResponse(sample []*parse.DockerEntry, table *compute.CorrelationTable, alpha float64, beta float64) *ComputeResponse {
+func NewComputeResponse(sample []*parse.DockerEntry, table *compute.CorrelationTable, alpha float64, beta float64, rSquared float64) *ComputeResponse {
 	yPoints, xPoints := make([]float64, len(sample)), make([]float64, len(sample))
 	for i := range sample {
 		yPoints[i] = sample[i].StartupTime
@@ -51,6 +52,7 @@ func NewComputeResponse(sample []*parse.DockerEntry, table *compute.CorrelationT
 			XPoints:          xPoints,
 			AlphaCoefficient: alpha,
 			BetaCoefficient:  beta,
+			RSquared:         rSquared,
 		},
 		TableData: TableData{
 			YMids: table.GetYMids(),
