@@ -25,6 +25,7 @@ export type GraphData = {
 
 	alphaCoefficient: number;
 	betaCoefficient: number;
+	rSquared: number;
 };
 
 export type ComputeResponse = {

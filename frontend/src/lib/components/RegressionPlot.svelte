@@ -62,6 +62,7 @@
 	$effect(() => {
 		if (!chart) return;
 		chart.setOption({
+			backgroundColor: isDark ? '#141414' : 'ffffff',
 			legend: {
 				selectedMode: 'multiple',
 				bottom: 0,
@@ -161,6 +162,7 @@
 
 <p></p>
 <div bind:this={chartNode}></div>
+<p class="instructions">{`R2=${format(data.graphData.rSquared, 4)}`}</p>
 
 <style>
 	div {

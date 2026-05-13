@@ -64,12 +64,6 @@
 		font-size: 2.2rem;
 	}
 
-	.instructions {
-		text-align: left;
-		color: light-dark(#555, #aaa);
-		margin-inline: auto;
-	}
-
 	hr {
 		margin-top: 1rem;
 		margin-bottom: 1rem;

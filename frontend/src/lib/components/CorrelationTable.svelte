@@ -62,9 +62,15 @@
 				{/each}
 			</tr>
 			<tr>
-				<th>Cond. Mean Y</th>
+				<th>Ŷ</th>
 				{#each data.tableData.conditionalMeanY as y}
 					<td>{format(y)}</td>
+				{/each}
+			</tr>
+			<tr>
+				<th>N</th>
+				{#each data.tableData.xMarginal as n}
+					<td>{format(n)}</td>
 				{/each}
 			</tr>
 		</tbody>
