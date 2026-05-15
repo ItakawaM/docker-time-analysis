@@ -8,23 +8,6 @@
 		return x * alpha + beta;
 	}
 
-	const COLORS = {
-		light: {
-			empirical: '#0D1B1E',
-			scatter: '#6EA4BF',
-			regression: '#AA6373',
-			background: '#ffffff',
-			text: '#333333'
-		},
-		dark: {
-			empirical: '#A8DADC',
-			scatter: '#6EA4BF',
-			regression: '#E07A8A',
-			background: '#1a1a2e',
-			text: '#cccccc'
-		}
-	};
-
 	type Props = {
 		data: ComputeResponse;
 	};
@@ -81,7 +64,7 @@
 			},
 			title: {
 				text: `Regression Visualization`,
-				subtext: `y=${format(data.regressionData.alphaCoefficient, 4)}x+${format(data.regressionData.betaCoefficient, 4)}`
+				subtext: `y=${format(data.regressionData.alphaCoefficient, 4)}x+${format(data.regressionData.betaCoefficient, 4)} R2=${format(data.regressionData.rSquared, 4)}`
 			},
 			tooltip: {
 				trigger: 'axis',
@@ -173,11 +156,10 @@
 
 <p></p>
 <div bind:this={chartNode}></div>
-<p class="instructions">{`R2=${format(data.regressionData.rSquared, 4)}`}</p>
 
 <style>
 	div {
-		width: 100%;
+		width: min(85ch, 100% - 4rem);
 		height: 600px;
 	}
 </style>
