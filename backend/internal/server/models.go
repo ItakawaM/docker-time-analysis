@@ -1,6 +1,8 @@
 package server
 
 import (
+	"math"
+
 	"github.com/ItakawaM/docker-time-analysis/internal/compute"
 	"github.com/ItakawaM/docker-time-analysis/internal/parse"
 )
@@ -41,7 +43,24 @@ type CorrelationTableData struct {
 	ConditionalMeanY []float64 `json:"conditionalMeanY"`
 }
 
-func NewComputeResponse(sample []*parse.DockerEntry, table *compute.CorrelationTable, alpha float64, beta float64, rSquared float64) *ComputeResponse {
+type SignificanceRequest struct {
+	SignificanceLevel float64 `json:"significanceLevel"`
+}
+
+type SignificanceResponse struct {
+	Fisher  StatTestResult `json:"fisher"`
+	Pearson StatTestResult `json:"pearson"`
+}
+
+type StatTestResult struct {
+	Value     float64 `json:"value,omitempty"`
+	Empirical float64 `json:"empirical"`
+	Critical  float64 `json:"critical"`
+	Adequate  bool    `json:"adequate"`
+}
+
+func NewComputeResponse(sample []*parse.DockerEntry, table *compute.CorrelationTable,
+	alpha float64, beta float64, rSquared float64) *ComputeResponse {
 	yPoints, xPoints := make([]float64, len(sample)), make([]float64, len(sample))
 	for i := range sample {
 		yPoints[i] = sample[i].StartupTime
@@ -63,6 +82,23 @@ func NewComputeResponse(sample []*parse.DockerEntry, table *compute.CorrelationT
 			AlphaCoefficient: alpha,
 			BetaCoefficient:  beta,
 			RSquared:         rSquared,
+		},
+	}
+}
+
+func NewSignificanceResponse(fisherEmpirical float64, fisherCritical float64,
+	pearsonCorrelation float64, pearsonEmpirical float64, pearsonCritical float64) *SignificanceResponse {
+	return &SignificanceResponse{
+		Fisher: StatTestResult{
+			Empirical: fisherEmpirical,
+			Critical:  fisherCritical,
+			Adequate:  fisherEmpirical > fisherCritical,
+		},
+		Pearson: StatTestResult{
+			Value:     pearsonCorrelation,
+			Empirical: pearsonEmpirical,
+			Critical:  pearsonCritical,
+			Adequate:  math.Abs(pearsonEmpirical) > pearsonCritical,
 		},
 	}
 }
