@@ -1,8 +1,12 @@
 <script lang="ts">
-	import type { ComputeResponse, UploadResponse } from './lib/api/models';
+	import type { ComputeResponse, SignificanceResponse, UploadResponse } from './lib/api/models';
+	import { postSignificance } from './lib/api/services';
 	import CorrelationTable from './lib/components/CorrelationTable.svelte';
 	import CSVFileInput from './lib/components/CSVFileInput.svelte';
+	import RegressionPlot from './lib/components/RegressionPlot.svelte';
 	import SampleSizeSlider from './lib/components/SampleSizeSlider.svelte';
+	import SignificanceLevelSlider from './lib/components/SignificanceLevelSlider.svelte';
+	import SignificanceTable from './lib/components/SignificanceTable.svelte';
 
 	let uploadResponse: UploadResponse | null = $state(null);
 	function handleUploadSuccess(data: UploadResponse): void {
@@ -22,6 +26,15 @@
 	function handleComputeError(): void {
 		computeResponse = null;
 	}
+
+	let significanceResponse: SignificanceResponse | null = $state(null);
+	function handleSignificanceSuccess(data: SignificanceResponse): void {
+		significanceResponse = data;
+	}
+
+	function handleSignificanceError(): void {
+		significanceResponse = null;
+	}
 </script>
 
 <h1 id="title">Docker Time Analyzer</h1>
@@ -38,11 +51,13 @@
 	<hr />
 	<p class="instructions">Select the amount of entries you would like to sample</p>
 	<section>
-		<SampleSizeSlider
-			totalRows={uploadResponse.parsedRows}
-			onSuccess={handleComputeSuccess}
-			onError={handleComputeError}
-		/>
+		{#key uploadResponse}
+			<SampleSizeSlider
+				totalRows={uploadResponse.parsedRows}
+				onSuccess={handleComputeSuccess}
+				onError={handleComputeError}
+			/>
+		{/key}
 	</section>
 {/if}
 
@@ -53,6 +68,27 @@
 	</p>
 	<section>
 		<CorrelationTable data={computeResponse} />
+		<RegressionPlot data={computeResponse} />
+	</section>
+{/if}
+
+{#if computeResponse}
+	<hr />
+	<p class="instructions">Select the significance level for regression model adequecy validation</p>
+	<section>
+		<SignificanceLevelSlider
+			{computeResponse}
+			onSuccess={handleSignificanceSuccess}
+			onError={handleSignificanceError}
+		/>
+	</section>
+{/if}
+
+{#if significanceResponse}
+	<hr />
+	<p class="instructions">Regression model adequecy validation</p>
+	<section>
+		<SignificanceTable data={significanceResponse} />
 	</section>
 {/if}
 
@@ -60,12 +96,6 @@
 	#title {
 		text-align: center;
 		font-size: 2.2rem;
-	}
-
-	.instructions {
-		text-align: left;
-		color: light-dark(#555, #aaa);
-		margin-inline: auto;
 	}
 
 	hr {

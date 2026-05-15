@@ -63,3 +63,9 @@ code {
 .error {
 	color: light-dark(#b91c1c, #f87171);
 }
+
+.instructions {
+	text-align: center;
+	color: light-dark(#555, #aaa);
+	margin-inline: auto;
+}

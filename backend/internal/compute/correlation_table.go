@@ -2,34 +2,35 @@ package compute
 
 import (
 	"fmt"
-	"os"
-	"text/tabwriter"
+	"math"
 
 	"github.com/ItakawaM/docker-time-analysis/internal/parse"
 	"gonum.org/v1/gonum/mat"
+	"gonum.org/v1/gonum/stat"
+	"gonum.org/v1/gonum/stat/distuv"
 )
 
-type Interval struct {
-	Begin float64
-	End   float64
-	Mid   float64
+type interval struct {
+	begin float64
+	end   float64
+	mid   float64
 }
 
-func BuildIntervals(min float64, max float64, count int) ([]Interval, error) {
+func buildIntervals(min float64, max float64, count int) ([]interval, error) {
 	if count <= 0 {
 		return nil, fmt.Errorf("count has to be positive, got = %d", count)
 	}
 
 	width := (max - min) / float64(count)
-	intervals := make([]Interval, count)
+	intervals := make([]interval, count)
 	for i := range intervals {
 		begin := min + float64(i)*width
 		end := begin + width
 
-		intervals[i] = Interval{
-			Begin: begin,
-			End:   end,
-			Mid:   (begin + end) / 2,
+		intervals[i] = interval{
+			begin: begin,
+			end:   end,
+			mid:   (begin + end) / 2,
 		}
 	}
 
@@ -37,15 +38,17 @@ func BuildIntervals(min float64, max float64, count int) ([]Interval, error) {
 }
 
 type CorrelationTable struct {
-	YIntervals []Interval
-	XIntervals []Interval
+	totalValues int
+
+	yIntervals []interval
+	xIntervals []interval
 
 	// (y, x) -> row: y, column: x
-	Frequencies *mat.Dense
+	frequencies *mat.Dense
 
-	XMarginal        *mat.VecDense // column totals
-	YMarginal        *mat.VecDense // row totals
-	ConditionalMeanY *mat.VecDense
+	xMarginals       *mat.VecDense // column totals
+	yMarginals       *mat.VecDense // row totals
+	conditionalMeanY *mat.VecDense
 }
 
 func NewCorrelationTable(data []*parse.DockerEntry) (*CorrelationTable, error) {
@@ -68,24 +71,25 @@ func NewCorrelationTable(data []*parse.DockerEntry) (*CorrelationTable, error) {
 	}
 
 	intervals, _ := SturgesCoeff(len(data))
-	xIntervals, err := BuildIntervals(minX, maxX, intervals)
+	xIntervals, err := buildIntervals(minX, maxX, intervals)
 	if err != nil {
 		return nil, err
 	}
 
-	yIntervals, err := BuildIntervals(minY, maxY, intervals)
+	yIntervals, err := buildIntervals(minY, maxY, intervals)
 	if err != nil {
 		return nil, err
 	}
 
 	freq := mat.NewDense(intervals, intervals, nil)
 	table := &CorrelationTable{
-		XIntervals:       xIntervals,
-		YIntervals:       yIntervals,
-		Frequencies:      freq,
-		XMarginal:        mat.NewVecDense(len(xIntervals), nil),
-		YMarginal:        mat.NewVecDense(len(yIntervals), nil),
-		ConditionalMeanY: mat.NewVecDense(len(xIntervals), nil),
+		totalValues:      len(data),
+		xIntervals:       xIntervals,
+		yIntervals:       yIntervals,
+		frequencies:      freq,
+		xMarginals:       mat.NewVecDense(len(xIntervals), nil),
+		yMarginals:       mat.NewVecDense(len(yIntervals), nil),
+		conditionalMeanY: mat.NewVecDense(len(xIntervals), nil),
 	}
 
 	for _, entry := range data {
@@ -93,19 +97,19 @@ func NewCorrelationTable(data []*parse.DockerEntry) (*CorrelationTable, error) {
 		i := table.findInterval(yIntervals, entry.StartupTime)
 		j := table.findInterval(xIntervals, entry.DockerCount)
 		if i >= 0 && j >= 0 {
-			table.Frequencies.Set(i, j, table.Frequencies.At(i, j)+1)
+			table.frequencies.Set(i, j, table.frequencies.At(i, j)+1)
 		}
 	}
 
-	table.calculateMarginals()
-	table.calculateConditionalMean()
+	table.assignMarginals()
+	table.assignConditionalMean()
 
 	return table, nil
 }
 
-func (ct *CorrelationTable) findInterval(intervals []Interval, value float64) int {
+func (ct *CorrelationTable) findInterval(intervals []interval, value float64) int {
 	for i, interval := range intervals {
-		if value >= interval.Begin && (value < interval.End || i == len(intervals)-1) {
+		if value >= interval.begin && (value < interval.end || i == len(intervals)-1) {
 			return i
 		}
 	}
@@ -113,63 +117,150 @@ func (ct *CorrelationTable) findInterval(intervals []Interval, value float64) in
 	return -1
 }
 
-func (ct *CorrelationTable) calculateMarginals() {
-	// Transposition and Multiply by identity vector trick
-	identityVector := mat.NewVecDense(len(ct.YIntervals), nil)
-	for k := range ct.YIntervals {
+func (ct *CorrelationTable) assignMarginals() {
+	identityVector := mat.NewVecDense(len(ct.yIntervals), nil)
+	for k := range ct.yIntervals {
 		identityVector.SetVec(k, 1)
 	}
 	// Matrix[NxM] -> Matrix[MxN] | Matrix[MxN] x Identity[Nx1] -> ColumnSumVector[Nx1]
-	ct.XMarginal.MulVec(ct.Frequencies.T(), identityVector)
+	ct.xMarginals.MulVec(ct.frequencies.T(), identityVector)
 
-	identityVector = mat.NewVecDense(len(ct.XIntervals), nil)
-	for k := range ct.XIntervals {
+	identityVector = mat.NewVecDense(len(ct.xIntervals), nil)
+	for k := range ct.xIntervals {
 		identityVector.SetVec(k, 1)
 	}
 	// Matrix[NxM] x Identity[Mx1] -> RowSumVector[Mx1]
-	ct.YMarginal.MulVec(ct.Frequencies, identityVector)
+	ct.yMarginals.MulVec(ct.frequencies, identityVector)
 }
 
-func (ct *CorrelationTable) calculateConditionalMean() {
-	yMids := mat.NewVecDense(len(ct.YIntervals), nil)
-	for i, interval := range ct.YIntervals {
-		yMids.SetVec(i, interval.Mid)
+func (ct *CorrelationTable) assignConditionalMean() {
+	yMids := mat.NewVecDense(len(ct.yIntervals), nil)
+	for i, interval := range ct.yIntervals {
+		yMids.SetVec(i, interval.mid)
 	}
-	ct.ConditionalMeanY.MulVec(ct.Frequencies.T(), yMids)
-	for i := range ct.XIntervals {
+	ct.conditionalMeanY.MulVec(ct.frequencies.T(), yMids)
+	for i := range ct.xIntervals {
 		// Sum(y_i * n_ij) / n_i
-		ct.ConditionalMeanY.SetVec(i,
-			ct.ConditionalMeanY.AtVec(i)/ct.XMarginal.AtVec(i))
+		ct.conditionalMeanY.SetVec(i,
+			ct.conditionalMeanY.AtVec(i)/ct.xMarginals.AtVec(i))
 	}
 }
 
-func (ct *CorrelationTable) Print() {
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	defer w.Flush()
+func (ct *CorrelationTable) ComputeLinearRegressionParams() (alpha float64, beta float64) {
+	x := ct.GetXMids()
+	y := ct.GetConditionalMeanY()
+	weights := ct.GetXMarginals()
 
-	fmt.Fprintf(w, "Y \\ X")
-	for _, x := range ct.XIntervals {
-		fmt.Fprintf(w, "\t%.1f", x.Mid)
-	}
-	fmt.Fprintf(w, "\t%s\n", "my_j")
+	// y = ax + b
+	beta, alpha = stat.LinearRegression(x, y, weights, false)
+	return
+}
 
-	for j, y := range ct.YIntervals {
-		fmt.Fprintf(w, "%.1f", y.Mid)
-		for i := range ct.XIntervals {
-			fmt.Fprintf(w, "\t%.0f", ct.Frequencies.At(j, i))
-		}
-		fmt.Fprintf(w, "\t%d\n", int(ct.YMarginal.AtVec(j)))
+func (ct *CorrelationTable) ComputeRSquared(alpha float64, beta float64) (rSquared float64) {
+	Q, _, Qo := ct.computeVariations(alpha, beta)
+	rSquared = 1 - Qo/Q
+	return
+}
+
+func (ct *CorrelationTable) ComputeFisherStatistics(alpha float64, beta float64, significanceLevel float64, mParams int) (empirical float64, critical float64) {
+	_, Qp, Qo := ct.computeVariations(alpha, beta)
+	df1, df2 := float64(mParams-1), float64(mParams)
+	empirical = Qp * df2 / (Qo * df1)
+
+	critical = distuv.F{
+		D1: df1,
+		D2: df2,
+	}.Quantile(1 - significanceLevel)
+
+	return
+}
+
+func (ct *CorrelationTable) computeVariations(alpha, beta float64) (Q, Qp, Qo float64) {
+	x := ct.GetXMids()
+	y := ct.GetConditionalMeanY()
+	weights := ct.GetXMarginals()
+	yMean := stat.Mean(y, weights)
+
+	for i := range x {
+		ni := weights[i]
+		yTheoretical := beta + alpha*x[i]
+
+		diffTotal := y[i] - yMean
+		diffResidual := y[i] - yTheoretical
+		diffRegression := yTheoretical - yMean
+
+		Q += ni * diffTotal * diffTotal            // total variation
+		Qo += ni * diffResidual * diffResidual     // residual variation
+		Qp += ni * diffRegression * diffRegression // regression variation
+	}
+	return
+}
+
+func (ct *CorrelationTable) ComputePearsonCorrelation(significanceLevel float64) (r float64, empirical float64, critical float64) {
+	x := ct.GetXMids()
+	y := ct.GetConditionalMeanY()
+	weights := ct.GetXMarginals()
+
+	r = stat.Correlation(x, y, weights)
+
+	df := float64(ct.totalValues - 2.0)
+	empirical = r * math.Sqrt(df) / math.Sqrt(1.0-r*r)
+
+	distribution := distuv.StudentsT{
+		Mu:    0,
+		Sigma: 1,
+		Nu:    df,
+	}
+	critical = distribution.Quantile(1.0 - significanceLevel/2)
+
+	return
+}
+
+func (ct *CorrelationTable) GetXMids() []float64 {
+	xMids := make([]float64, len(ct.xIntervals))
+	for i := range xMids {
+		xMids[i] = ct.xIntervals[i].mid
 	}
 
-	fmt.Fprintf(w, "nx_i")
-	for i := range ct.XIntervals {
-		fmt.Fprintf(w, "\t%d", int(ct.XMarginal.AtVec(i)))
-	}
-	fmt.Fprintf(w, "\n")
+	return xMids
+}
 
-	fmt.Fprintf(w, "ȳ(xᵢ)")
-	for i := range ct.XIntervals {
-		fmt.Fprintf(w, "\t%.2f", ct.ConditionalMeanY.AtVec(i))
+func (ct *CorrelationTable) GetYMids() []float64 {
+	yMids := make([]float64, len(ct.yIntervals))
+	for i := range yMids {
+		yMids[i] = ct.yIntervals[i].mid
 	}
-	fmt.Fprintf(w, "\n")
+
+	return yMids
+}
+
+func (ct *CorrelationTable) GetXMarginals() []float64 {
+	xMarginals := make([]float64, len(ct.xMarginals.RawVector().Data))
+	for i := range xMarginals {
+		xMarginals[i] = ct.xMarginals.AtVec(i)
+	}
+
+	return xMarginals
+}
+
+func (ct *CorrelationTable) GetYMarginals() []float64 {
+	yMarginals := make([]float64, len(ct.yMarginals.RawVector().Data))
+	for i := range yMarginals {
+		yMarginals[i] = ct.yMarginals.AtVec(i)
+	}
+
+	return yMarginals
+}
+
+func (ct *CorrelationTable) GetConditionalMeanY() []float64 {
+	conditionalY := make([]float64, len(ct.conditionalMeanY.RawVector().Data))
+	for i := range conditionalY {
+		conditionalY[i] = ct.conditionalMeanY.AtVec(i)
+	}
+
+	return conditionalY
+}
+
+func (ct *CorrelationTable) GetFrequencies() []float64 {
+	return append([]float64(nil), ct.frequencies.RawMatrix().Data...)
 }

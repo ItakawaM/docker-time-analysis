@@ -6,3 +6,11 @@ export function debounce<T>(fn: (value: T) => void, delay = 300) {
 		timeout = setTimeout(() => fn(value), delay);
 	};
 }
+
+export function format(n: number, base: number = 0): string {
+	return n.toFixed(base);
+}
+
+export function clamp(min: number, max: number, value: number) {
+	return Math.min(max, Math.max(min, value));
+}

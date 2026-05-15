@@ -1,14 +1,14 @@
 <script lang="ts">
-	import type { ComputeResponse } from '../api/models';
-	import { postCompute } from '../api/services';
+	import type { ComputeResponse, SignificanceResponse } from '../api/models';
+	import { postSignificance } from '../api/services';
 	import { clamp, debounce } from './helpers';
 
 	type Props = {
-		totalRows: number;
-		onSuccess?: (data: ComputeResponse) => void;
+		computeResponse: ComputeResponse | null;
+		onSuccess?: (data: SignificanceResponse) => void;
 		onError?: () => void;
 	};
-	let { totalRows, onSuccess, onError }: Props = $props();
+	let { computeResponse, onSuccess, onError }: Props = $props();
 
 	type Status = 'idle' | 'success' | 'error';
 	let status = $state<Status>('idle');
@@ -16,16 +16,19 @@
 	let errorMessage: string = $state('');
 	let successMessage: string = $state('');
 
-	const min = 50;
-	let value: number = $state(min);
+	const min = 0.001;
+	const max = 0.99;
+	const step = 0.001;
 
-	let debounced: number = $state(min);
+	let value: number = $state(0.05);
+	let debounced: number = $state(0.05);
+
 	const setDebounced = debounce((value: number) => {
 		debounced = value;
 	}, 375);
 
 	$effect(() => {
-		value = clamp(min, totalRows, value);
+		value = clamp(min, max, value);
 	});
 
 	$effect(() => {
@@ -35,22 +38,24 @@
 	$effect(() => {
 		const controller = new AbortController();
 
-		postCompute({ sampleSize: debounced }, controller.signal)
-			.then((data) => {
-				successMessage = `${debounced} rows sampled from ${totalRows} uploaded`;
-				status = 'success';
+		if (computeResponse) {
+			postSignificance({ significanceLevel: debounced }, controller.signal)
+				.then((data) => {
+					successMessage = `Validated model adequecy at significance level ${debounced}`;
+					status = 'success';
 
-				onSuccess?.(data);
-			})
-			.catch((err) => {
-				if (err.name === 'AbortError') return;
+					onSuccess?.(data);
+				})
+				.catch((err) => {
+					if (err.name === 'AbortError') return;
 
-				const error = err instanceof Error ? err : new Error('Unknown error');
-				errorMessage = error.message;
-				status = 'error';
+					const error = err instanceof Error ? err : new Error('Unknown error');
+					errorMessage = error.message;
+					status = 'error';
 
-				onError?.();
-			});
+					onError?.();
+				});
+		}
 
 		return () => controller.abort();
 	});
@@ -58,8 +63,8 @@
 
 <div class="slider-wrapper">
 	<div class="slider-block">
-		<input type="range" {min} step="1" bind:value max={totalRows} />
-		<input type="number" {min} step="1" bind:value max={totalRows} />
+		<input type="range" {min} {max} {step} bind:value />
+		<input type="number" {min} {max} {step} bind:value />
 	</div>
 	<p class="status {status}">
 		{#if status === 'error'}

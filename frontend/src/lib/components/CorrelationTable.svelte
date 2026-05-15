@@ -1,18 +1,17 @@
 <script lang="ts">
 	import type { ComputeResponse } from '../api/models';
+	import { format } from './helpers';
 
 	type Props = {
 		data: ComputeResponse;
 	};
 	let { data }: Props = $props();
 
-	const rows: number = $derived(data.yMarginal.length);
+	const rows: number = $derived(data.correlationTableData.yMarginal.length);
 
 	function freq(row: number, column: number): number {
-		return data.frequencies[row * rows + column];
+		return data.correlationTableData.frequencies[row * rows + column];
 	}
-
-	const format = (n: number) => n.toFixed(0);
 </script>
 
 <div class="tables">
@@ -20,32 +19,32 @@
 		<thead>
 			<tr>
 				<th>Y \ X</th>
-				{#each data.xMids as x}
+				{#each data.correlationTableData.xMids as x}
 					<th>{format(x)}</th>
 				{/each}
 				<th>Σ Y</th>
 			</tr>
 		</thead>
 		<tbody>
-			{#each data.yMids as y, row}
+			{#each data.correlationTableData.yMids as y, row}
 				<tr>
 					<th>{format(y)}</th>
-					{#each data.xMids as _, col}
+					{#each data.correlationTableData.xMids as _, col}
 						<td>{format(freq(row, col))}</td>
 					{/each}
-					<td>{format(data.yMarginal[row])}</td>
+					<td>{format(data.correlationTableData.yMarginal[row])}</td>
 				</tr>
 			{/each}
 		</tbody>
 		<tfoot>
 			<tr>
 				<th>Σ X</th>
-				{#each data.xMarginal as xm}
+				{#each data.correlationTableData.xMarginal as xm}
 					<td>{format(xm)}</td>
 				{/each}
 				<td
 					>{format(
-						data.xMarginal.reduce((accumulator, currentValue) => {
+						data.correlationTableData.xMarginal.reduce((accumulator, currentValue) => {
 							return accumulator + currentValue;
 						}, 0)
 					)}</td
@@ -58,14 +57,20 @@
 		<tbody>
 			<tr>
 				<th>X</th>
-				{#each data.xMids as x}
+				{#each data.correlationTableData.xMids as x}
 					<td>{format(x)}</td>
 				{/each}
 			</tr>
 			<tr>
-				<th>Cond. Mean Y</th>
-				{#each data.conditionalMeanY as y}
+				<th>Ŷ</th>
+				{#each data.correlationTableData.conditionalMeanY as y}
 					<td>{format(y)}</td>
+				{/each}
+			</tr>
+			<tr>
+				<th>N</th>
+				{#each data.correlationTableData.xMarginal as n}
+					<td>{format(n)}</td>
 				{/each}
 			</tr>
 		</tbody>

@@ -1,6 +1,11 @@
 package server
 
-import "github.com/ItakawaM/docker-time-analysis/internal/compute"
+import (
+	"math"
+
+	"github.com/ItakawaM/docker-time-analysis/internal/compute"
+	"github.com/ItakawaM/docker-time-analysis/internal/parse"
+)
 
 type UploadResponse struct {
 	Message    string `json:"message"`
@@ -12,6 +17,21 @@ type ComputeRequest struct {
 }
 
 type ComputeResponse struct {
+	CorrelationTableData CorrelationTableData `json:"correlationTableData"`
+	RegressionData       RegressionData       `json:"regressionData"`
+}
+
+type RegressionData struct {
+	YPoints []float64 `json:"yPoints"`
+	XPoints []float64 `json:"xPoints"`
+
+	AlphaCoefficient float64 `json:"alphaCoefficient"`
+	BetaCoefficient  float64 `json:"betaCoefficient"`
+
+	RSquared float64 `json:"rSquared"`
+}
+
+type CorrelationTableData struct {
 	YMids []float64 `json:"yMids"`
 	XMids []float64 `json:"xMids"`
 
@@ -23,24 +43,62 @@ type ComputeResponse struct {
 	ConditionalMeanY []float64 `json:"conditionalMeanY"`
 }
 
-func NewComputeResponse(table *compute.CorrelationTable) *ComputeResponse {
-	yMids := make([]float64, len(table.YIntervals))
-	for i := range yMids {
-		yMids[i] = table.YIntervals[i].Mid
-	}
+type SignificanceRequest struct {
+	SignificanceLevel float64 `json:"significanceLevel"`
+}
 
-	xMids := make([]float64, len(table.XIntervals))
-	for i := range xMids {
-		xMids[i] = table.XIntervals[i].Mid
+type SignificanceResponse struct {
+	Fisher  StatTestResult `json:"fisher"`
+	Pearson StatTestResult `json:"pearson"`
+}
+
+type StatTestResult struct {
+	Value     float64 `json:"value,omitempty"`
+	Empirical float64 `json:"empirical"`
+	Critical  float64 `json:"critical"`
+	Adequate  bool    `json:"adequate"`
+}
+
+func NewComputeResponse(sample []*parse.DockerEntry, table *compute.CorrelationTable,
+	alpha float64, beta float64, rSquared float64) *ComputeResponse {
+	yPoints, xPoints := make([]float64, len(sample)), make([]float64, len(sample))
+	for i := range sample {
+		yPoints[i] = sample[i].StartupTime
+		xPoints[i] = sample[i].DockerCount
 	}
 
 	return &ComputeResponse{
-		YMids: yMids,
-		XMids: xMids,
-		// Safe copy
-		Frequencies:      append([]float64(nil), table.Frequencies.RawMatrix().Data...),
-		XMarginal:        append([]float64(nil), table.XMarginal.RawVector().Data...),
-		YMarginal:        append([]float64(nil), table.YMarginal.RawVector().Data...),
-		ConditionalMeanY: append([]float64(nil), table.ConditionalMeanY.RawVector().Data...),
+		CorrelationTableData: CorrelationTableData{
+			YMids:            table.GetYMids(),
+			XMids:            table.GetXMids(),
+			Frequencies:      table.GetFrequencies(),
+			XMarginal:        table.GetXMarginals(),
+			YMarginal:        table.GetYMarginals(),
+			ConditionalMeanY: table.GetConditionalMeanY(),
+		},
+		RegressionData: RegressionData{
+			YPoints:          yPoints,
+			XPoints:          xPoints,
+			AlphaCoefficient: alpha,
+			BetaCoefficient:  beta,
+			RSquared:         rSquared,
+		},
+	}
+}
+
+func NewSignificanceResponse(fisherEmpirical float64, fisherCritical float64,
+	pearsonCorrelation float64, pearsonEmpirical float64, pearsonCritical float64) *SignificanceResponse {
+	return &SignificanceResponse{
+		Fisher: StatTestResult{
+			Empirical: fisherEmpirical,
+			Critical:  fisherCritical,
+			Adequate:  fisherEmpirical > fisherCritical,
+		},
+		Pearson: StatTestResult{
+			Value:     pearsonCorrelation,
+			Empirical: pearsonEmpirical,
+			Critical:  pearsonCritical,
+			Adequate:  math.Abs(pearsonEmpirical) > pearsonCritical,
+		},
 	}
 }
