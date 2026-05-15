@@ -7,6 +7,11 @@ export type ComputeRequest = {
 	sampleSize: number;
 };
 
+export type ComputeResponse = {
+	correlationTableData: CorrelationTableData;
+	regressionData: RegressionData;
+};
+
 export type CorrelationTableData = {
 	yMids: number[];
 	xMids: number[];
@@ -29,7 +34,18 @@ export type RegressionData = {
 	rSquared: number;
 };
 
-export type ComputeResponse = {
-	correlationTableData: CorrelationTableData;
-	regressionData: RegressionData;
+export type SignificanceRequest = {
+	significanceLevel: number;
+};
+
+export type SignificanceResponse = {
+	fisher: StatTestResult;
+	pearson: StatTestResult;
+};
+
+export type StatTestResult = {
+	value: number | null;
+	empirical: number;
+	critical: number;
+	adequate: boolean;
 };

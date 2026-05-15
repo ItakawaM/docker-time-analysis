@@ -1,5 +1,11 @@
 import { postFormData, postJSON } from './api';
-import type { ComputeRequest, ComputeResponse, UploadResponse } from './models';
+import type {
+	ComputeRequest,
+	ComputeResponse,
+	SignificanceRequest,
+	SignificanceResponse,
+	UploadResponse
+} from './models';
 
 export async function postUpload(file: File): Promise<UploadResponse> {
 	const formData = new FormData();
@@ -13,4 +19,8 @@ export async function postCompute(
 	signal: AbortSignal
 ): Promise<ComputeResponse> {
 	return postJSON<ComputeResponse>('/api/compute', data, signal);
+}
+
+export async function postSignificance(data: SignificanceRequest, signal: AbortSignal) {
+	return postJSON<SignificanceResponse>('/api/compute/significance', data, signal);
 }
