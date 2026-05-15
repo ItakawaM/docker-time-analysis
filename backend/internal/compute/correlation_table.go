@@ -158,7 +158,7 @@ func (ct *CorrelationTable) ComputeLinearRegressionParams() (alpha float64, beta
 
 func (ct *CorrelationTable) ComputeRSquared(alpha float64, beta float64) (rSquared float64) {
 	Q, _, Qo := ct.computeVariations(alpha, beta)
-	rSquared = Qo / Q
+	rSquared = 1 - Qo/Q
 	return
 }
 
