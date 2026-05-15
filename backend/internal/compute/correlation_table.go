@@ -8,27 +8,27 @@ import (
 	"gonum.org/v1/gonum/stat"
 )
 
-type Interval struct {
-	Begin float64
-	End   float64
-	Mid   float64
+type interval struct {
+	begin float64
+	end   float64
+	mid   float64
 }
 
-func BuildIntervals(min float64, max float64, count int) ([]Interval, error) {
+func buildIntervals(min float64, max float64, count int) ([]interval, error) {
 	if count <= 0 {
 		return nil, fmt.Errorf("count has to be positive, got = %d", count)
 	}
 
 	width := (max - min) / float64(count)
-	intervals := make([]Interval, count)
+	intervals := make([]interval, count)
 	for i := range intervals {
 		begin := min + float64(i)*width
 		end := begin + width
 
-		intervals[i] = Interval{
-			Begin: begin,
-			End:   end,
-			Mid:   (begin + end) / 2,
+		intervals[i] = interval{
+			begin: begin,
+			end:   end,
+			mid:   (begin + end) / 2,
 		}
 	}
 
@@ -36,15 +36,15 @@ func BuildIntervals(min float64, max float64, count int) ([]Interval, error) {
 }
 
 type CorrelationTable struct {
-	YIntervals []Interval
-	XIntervals []Interval
+	yIntervals []interval
+	xIntervals []interval
 
 	// (y, x) -> row: y, column: x
-	Frequencies *mat.Dense
+	frequencies *mat.Dense
 
-	XMarginal        *mat.VecDense // column totals
-	YMarginal        *mat.VecDense // row totals
-	ConditionalMeanY *mat.VecDense
+	xMarginals       *mat.VecDense // column totals
+	yMarginals       *mat.VecDense // row totals
+	conditionalMeanY *mat.VecDense
 }
 
 func NewCorrelationTable(data []*parse.DockerEntry) (*CorrelationTable, error) {
@@ -67,24 +67,24 @@ func NewCorrelationTable(data []*parse.DockerEntry) (*CorrelationTable, error) {
 	}
 
 	intervals, _ := SturgesCoeff(len(data))
-	xIntervals, err := BuildIntervals(minX, maxX, intervals)
+	xIntervals, err := buildIntervals(minX, maxX, intervals)
 	if err != nil {
 		return nil, err
 	}
 
-	yIntervals, err := BuildIntervals(minY, maxY, intervals)
+	yIntervals, err := buildIntervals(minY, maxY, intervals)
 	if err != nil {
 		return nil, err
 	}
 
 	freq := mat.NewDense(intervals, intervals, nil)
 	table := &CorrelationTable{
-		XIntervals:       xIntervals,
-		YIntervals:       yIntervals,
-		Frequencies:      freq,
-		XMarginal:        mat.NewVecDense(len(xIntervals), nil),
-		YMarginal:        mat.NewVecDense(len(yIntervals), nil),
-		ConditionalMeanY: mat.NewVecDense(len(xIntervals), nil),
+		xIntervals:       xIntervals,
+		yIntervals:       yIntervals,
+		frequencies:      freq,
+		xMarginals:       mat.NewVecDense(len(xIntervals), nil),
+		yMarginals:       mat.NewVecDense(len(yIntervals), nil),
+		conditionalMeanY: mat.NewVecDense(len(xIntervals), nil),
 	}
 
 	for _, entry := range data {
@@ -92,19 +92,19 @@ func NewCorrelationTable(data []*parse.DockerEntry) (*CorrelationTable, error) {
 		i := table.findInterval(yIntervals, entry.StartupTime)
 		j := table.findInterval(xIntervals, entry.DockerCount)
 		if i >= 0 && j >= 0 {
-			table.Frequencies.Set(i, j, table.Frequencies.At(i, j)+1)
+			table.frequencies.Set(i, j, table.frequencies.At(i, j)+1)
 		}
 	}
 
-	table.calculateMarginals()
-	table.calculateConditionalMean()
+	table.assignMarginals()
+	table.assignConditionalMean()
 
 	return table, nil
 }
 
-func (ct *CorrelationTable) findInterval(intervals []Interval, value float64) int {
+func (ct *CorrelationTable) findInterval(intervals []interval, value float64) int {
 	for i, interval := range intervals {
-		if value >= interval.Begin && (value < interval.End || i == len(intervals)-1) {
+		if value >= interval.begin && (value < interval.end || i == len(intervals)-1) {
 			return i
 		}
 	}
@@ -112,78 +112,49 @@ func (ct *CorrelationTable) findInterval(intervals []Interval, value float64) in
 	return -1
 }
 
-func (ct *CorrelationTable) calculateMarginals() {
-	// Transposition and Multiply by identity vector trick
-	identityVector := mat.NewVecDense(len(ct.YIntervals), nil)
-	for k := range ct.YIntervals {
+func (ct *CorrelationTable) assignMarginals() {
+	identityVector := mat.NewVecDense(len(ct.yIntervals), nil)
+	for k := range ct.yIntervals {
 		identityVector.SetVec(k, 1)
 	}
 	// Matrix[NxM] -> Matrix[MxN] | Matrix[MxN] x Identity[Nx1] -> ColumnSumVector[Nx1]
-	ct.XMarginal.MulVec(ct.Frequencies.T(), identityVector)
+	ct.xMarginals.MulVec(ct.frequencies.T(), identityVector)
 
-	identityVector = mat.NewVecDense(len(ct.XIntervals), nil)
-	for k := range ct.XIntervals {
+	identityVector = mat.NewVecDense(len(ct.xIntervals), nil)
+	for k := range ct.xIntervals {
 		identityVector.SetVec(k, 1)
 	}
 	// Matrix[NxM] x Identity[Mx1] -> RowSumVector[Mx1]
-	ct.YMarginal.MulVec(ct.Frequencies, identityVector)
+	ct.yMarginals.MulVec(ct.frequencies, identityVector)
 }
 
-func (ct *CorrelationTable) calculateConditionalMean() {
-	yMids := mat.NewVecDense(len(ct.YIntervals), nil)
-	for i, interval := range ct.YIntervals {
-		yMids.SetVec(i, interval.Mid)
+func (ct *CorrelationTable) assignConditionalMean() {
+	yMids := mat.NewVecDense(len(ct.yIntervals), nil)
+	for i, interval := range ct.yIntervals {
+		yMids.SetVec(i, interval.mid)
 	}
-	ct.ConditionalMeanY.MulVec(ct.Frequencies.T(), yMids)
-	for i := range ct.XIntervals {
+	ct.conditionalMeanY.MulVec(ct.frequencies.T(), yMids)
+	for i := range ct.xIntervals {
 		// Sum(y_i * n_ij) / n_i
-		ct.ConditionalMeanY.SetVec(i,
-			ct.ConditionalMeanY.AtVec(i)/ct.XMarginal.AtVec(i))
+		ct.conditionalMeanY.SetVec(i,
+			ct.conditionalMeanY.AtVec(i)/ct.xMarginals.AtVec(i))
 	}
 }
 
-func (ct *CorrelationTable) GetXMids() []float64 {
-	xMids := make([]float64, len(ct.XIntervals))
-	for i := range xMids {
-		xMids[i] = ct.XIntervals[i].Mid
-	}
-
-	return xMids
-}
-
-func (ct *CorrelationTable) GetYMids() []float64 {
-	yMids := make([]float64, len(ct.YIntervals))
-	for i := range yMids {
-		yMids[i] = ct.YIntervals[i].Mid
-	}
-
-	return yMids
-}
-
-func (ct *CorrelationTable) GetXMarginals() []float64 {
-	xMarginals := make([]float64, len(ct.XMarginal.RawVector().Data))
-	for i := range xMarginals {
-		xMarginals[i] = ct.XMarginal.AtVec(i)
-	}
-
-	return xMarginals
-}
-
-func (ct *CorrelationTable) GetConditionalMeanY() []float64 {
-	conditionalY := make([]float64, len(ct.ConditionalMeanY.RawVector().Data))
-	for i := range conditionalY {
-		conditionalY[i] = ct.ConditionalMeanY.AtVec(i)
-	}
-
-	return conditionalY
-}
-
-func (table *CorrelationTable) ComputeLinearRegression() (alpha float64, beta float64, rSquared float64) {
+func (table *CorrelationTable) ComputeLinearRegressionParams() (alpha float64, beta float64) {
 	x := table.GetXMids()
 	y := table.GetConditionalMeanY()
 	weights := table.GetXMarginals()
 
+	// y = ax + b
 	beta, alpha = stat.LinearRegression(x, y, weights, false)
+	return
+}
+
+func (table *CorrelationTable) ComputeRSquared(alpha float64, beta float64) (rSquared float64) {
+	x := table.GetXMids()
+	y := table.GetConditionalMeanY()
+	weights := table.GetXMarginals()
 
 	yMean := stat.Mean(y, weights)
 
@@ -205,6 +176,54 @@ func (table *CorrelationTable) ComputeLinearRegression() (alpha float64, beta fl
 	}
 
 	rSquared = 1.0 - Qo/Q
-
 	return
+}
+
+func (ct *CorrelationTable) GetXMids() []float64 {
+	xMids := make([]float64, len(ct.xIntervals))
+	for i := range xMids {
+		xMids[i] = ct.xIntervals[i].mid
+	}
+
+	return xMids
+}
+
+func (ct *CorrelationTable) GetYMids() []float64 {
+	yMids := make([]float64, len(ct.yIntervals))
+	for i := range yMids {
+		yMids[i] = ct.yIntervals[i].mid
+	}
+
+	return yMids
+}
+
+func (ct *CorrelationTable) GetXMarginals() []float64 {
+	xMarginals := make([]float64, len(ct.xMarginals.RawVector().Data))
+	for i := range xMarginals {
+		xMarginals[i] = ct.xMarginals.AtVec(i)
+	}
+
+	return xMarginals
+}
+
+func (ct *CorrelationTable) GetYMarginals() []float64 {
+	yMarginals := make([]float64, len(ct.yMarginals.RawVector().Data))
+	for i := range yMarginals {
+		yMarginals[i] = ct.yMarginals.AtVec(i)
+	}
+
+	return yMarginals
+}
+
+func (ct *CorrelationTable) GetConditionalMeanY() []float64 {
+	conditionalY := make([]float64, len(ct.conditionalMeanY.RawVector().Data))
+	for i := range conditionalY {
+		conditionalY[i] = ct.conditionalMeanY.AtVec(i)
+	}
+
+	return conditionalY
+}
+
+func (ct *CorrelationTable) GetFrequencies() []float64 {
+	return append([]float64(nil), ct.frequencies.RawMatrix().Data...)
 }

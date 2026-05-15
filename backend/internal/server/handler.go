@@ -105,7 +105,8 @@ func (s *Server) HandleCompute(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	alpha, beta, rSquared := table.ComputeLinearRegression()
+	alpha, beta := table.ComputeLinearRegressionParams()
+	rSquared := table.ComputeRSquared(alpha, beta)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

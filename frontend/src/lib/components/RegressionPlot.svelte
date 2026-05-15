@@ -34,23 +34,34 @@
 	let chart: echarts.ECharts;
 
 	const linePoints: number[][] = $derived(
-		data.tableData.xMids.map((x, i) => [x, data.tableData.conditionalMeanY[i]])
+		data.correlationTableData.xMids.map((x, i) => [
+			x,
+			data.correlationTableData.conditionalMeanY[i]
+		])
 	);
 	const scatterPoints: number[][] = $derived(
-		data.graphData.xPoints.map((x, i) => [x, data.graphData.yPoints[i]])
+		data.regressionData.xPoints.map((x, i) => [x, data.regressionData.yPoints[i]])
 	);
 
-	const xMin: number = $derived(Math.min(...data.graphData.xPoints));
-	const xMax: number = $derived(Math.max(...data.graphData.xPoints));
+	const xMin: number = $derived(Math.min(...data.regressionData.xPoints));
+	const xMax: number = $derived(Math.max(...data.regressionData.xPoints));
 
 	const linearRegressionPoints: number[][] = $derived([
 		[
 			xMin,
-			plotLinearRegression(xMin, data.graphData.alphaCoefficient, data.graphData.betaCoefficient)
+			plotLinearRegression(
+				xMin,
+				data.regressionData.alphaCoefficient,
+				data.regressionData.betaCoefficient
+			)
 		],
 		[
 			xMax,
-			plotLinearRegression(xMax, data.graphData.alphaCoefficient, data.graphData.betaCoefficient)
+			plotLinearRegression(
+				xMax,
+				data.regressionData.alphaCoefficient,
+				data.regressionData.betaCoefficient
+			)
 		]
 	]);
 
@@ -70,7 +81,7 @@
 			},
 			title: {
 				text: `Regression Visualization`,
-				subtext: `y=${format(data.graphData.alphaCoefficient, 4)}x+${format(data.graphData.betaCoefficient, 4)}`
+				subtext: `y=${format(data.regressionData.alphaCoefficient, 4)}x+${format(data.regressionData.betaCoefficient, 4)}`
 			},
 			tooltip: {
 				trigger: 'axis',
@@ -162,7 +173,7 @@
 
 <p></p>
 <div bind:this={chartNode}></div>
-<p class="instructions">{`R2=${format(data.graphData.rSquared, 4)}`}</p>
+<p class="instructions">{`R2=${format(data.regressionData.rSquared, 4)}`}</p>
 
 <style>
 	div {

@@ -7,7 +7,7 @@ export type ComputeRequest = {
 	sampleSize: number;
 };
 
-export type TableData = {
+export type CorrelationTableData = {
 	yMids: number[];
 	xMids: number[];
 
@@ -19,16 +19,17 @@ export type TableData = {
 	conditionalMeanY: number[];
 };
 
-export type GraphData = {
+export type RegressionData = {
 	yPoints: number[];
 	xPoints: number[];
 
 	alphaCoefficient: number;
 	betaCoefficient: number;
+
 	rSquared: number;
 };
 
 export type ComputeResponse = {
-	tableData: TableData;
-	graphData: GraphData;
+	correlationTableData: CorrelationTableData;
+	regressionData: RegressionData;
 };

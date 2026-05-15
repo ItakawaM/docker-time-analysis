@@ -14,15 +14,22 @@ type ComputeRequest struct {
 	SampleSize int `json:"sampleSize"`
 }
 
-type GraphData struct {
-	YPoints          []float64 `json:"yPoints"`
-	XPoints          []float64 `json:"xPoints"`
-	AlphaCoefficient float64   `json:"alphaCoefficient"`
-	BetaCoefficient  float64   `json:"betaCoefficient"`
-	RSquared         float64   `json:"rSquared"`
+type ComputeResponse struct {
+	CorrelationTableData CorrelationTableData `json:"correlationTableData"`
+	RegressionData       RegressionData       `json:"regressionData"`
 }
 
-type TableData struct {
+type RegressionData struct {
+	YPoints []float64 `json:"yPoints"`
+	XPoints []float64 `json:"xPoints"`
+
+	AlphaCoefficient float64 `json:"alphaCoefficient"`
+	BetaCoefficient  float64 `json:"betaCoefficient"`
+
+	RSquared float64 `json:"rSquared"`
+}
+
+type CorrelationTableData struct {
 	YMids []float64 `json:"yMids"`
 	XMids []float64 `json:"xMids"`
 
@@ -34,11 +41,6 @@ type TableData struct {
 	ConditionalMeanY []float64 `json:"conditionalMeanY"`
 }
 
-type ComputeResponse struct {
-	TableData TableData `json:"tableData"`
-	GraphData GraphData `json:"graphData"`
-}
-
 func NewComputeResponse(sample []*parse.DockerEntry, table *compute.CorrelationTable, alpha float64, beta float64, rSquared float64) *ComputeResponse {
 	yPoints, xPoints := make([]float64, len(sample)), make([]float64, len(sample))
 	for i := range sample {
@@ -47,21 +49,20 @@ func NewComputeResponse(sample []*parse.DockerEntry, table *compute.CorrelationT
 	}
 
 	return &ComputeResponse{
-		GraphData: GraphData{
+		CorrelationTableData: CorrelationTableData{
+			YMids:            table.GetYMids(),
+			XMids:            table.GetXMids(),
+			Frequencies:      table.GetFrequencies(),
+			XMarginal:        table.GetXMarginals(),
+			YMarginal:        table.GetYMarginals(),
+			ConditionalMeanY: table.GetConditionalMeanY(),
+		},
+		RegressionData: RegressionData{
 			YPoints:          yPoints,
 			XPoints:          xPoints,
 			AlphaCoefficient: alpha,
 			BetaCoefficient:  beta,
 			RSquared:         rSquared,
-		},
-		TableData: TableData{
-			YMids: table.GetYMids(),
-			XMids: table.GetXMids(),
-			// Safe copy
-			Frequencies:      append([]float64(nil), table.Frequencies.RawMatrix().Data...),
-			XMarginal:        append([]float64(nil), table.XMarginal.RawVector().Data...),
-			YMarginal:        append([]float64(nil), table.YMarginal.RawVector().Data...),
-			ConditionalMeanY: append([]float64(nil), table.ConditionalMeanY.RawVector().Data...),
 		},
 	}
 }
