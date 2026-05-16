@@ -39,12 +39,14 @@ export type PiecewiseRegression = {
 	exponentialAlphaCoefficient: number;
 	exponentialBetaCoefficient: number;
 	rSquared: number;
+	qo: number;
 };
 
 export type LinearRegression = {
 	alphaCoefficient: number;
 	betaCoefficient: number;
 	rSquared: number;
+	qo: number;
 };
 
 export type SignificanceRequest = {
@@ -52,7 +54,8 @@ export type SignificanceRequest = {
 };
 
 export type SignificanceResponse = {
-	fisher: StatTestResult;
+	fisherLinear: StatTestResult;
+	fisherPiecewise: StatTestResult;
 	pearson: StatTestResult;
 };
 

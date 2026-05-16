@@ -10,7 +10,7 @@
 </script>
 
 <div class="tables">
-	{#each [{ label: 'Fisher', result: data.fisher }, { label: 'Pearson', result: data.pearson }] as { label, result }}
+	{#each [{ label: 'Fisher (Linear)', result: data.fisherLinear }, { label: 'Fisher (Piecewise)', result: data.fisherPiecewise }, { label: 'Pearson', result: data.pearson }] as { label, result }}
 		<table>
 			<thead>
 				<tr>
@@ -70,6 +70,13 @@
 		width: 100%;
 		border-collapse: collapse;
 		font-size: 1rem;
+		table-layout: fixed;
+	}
+
+	thead th:first-child,
+	tbody th,
+	tfoot th {
+		width: 55%;
 	}
 
 	th,

@@ -62,7 +62,7 @@
 	$effect(() => {
 		if (!chart) return;
 		chart.setOption({
-			backgroundColor: isDark ? '#141414' : '#ffffff',
+			backgroundColor: isDark ? '#141414' : '#F5F5F5',
 			legend: {
 				selectedMode: 'multiple',
 				bottom: 0,
@@ -179,7 +179,7 @@
 <div id="chart" bind:this={chartNode}></div>
 <div class="models">
 	<div class="model">
-		<p class="model-label">Linear regression</p>
+		<p class="model-label">Linear Regression Model</p>
 		<p>
 			<code
 				>y = {format(data.regressionData.linearRegression.alphaCoefficient, 4)}x + {format(
@@ -188,10 +188,11 @@
 				)}</code
 			>
 			&nbsp;·&nbsp; R² = {format(data.regressionData.linearRegression.rSquared, 10)}
+			&nbsp;·&nbsp; Q<sub>o</sub> = {format(data.regressionData.linearRegression.qo, 10)}
 		</p>
 	</div>
 	<div class="model">
-		<p class="model-label">Piecewise regression</p>
+		<p class="model-label">Piecewise Regression Model</p>
 		<p>
 			x ≤ {format(data.regressionData.piecewiseRegression.breakpoint, 4)}:
 			<code
@@ -210,8 +211,16 @@
 				)}<sup>x</sup></code
 			>
 			&nbsp;·&nbsp; R² = {format(data.regressionData.piecewiseRegression.rSquared, 10)}
+			&nbsp;·&nbsp; Q<sub>o</sub> = {format(data.regressionData.piecewiseRegression.qo, 10)}
 		</p>
 	</div>
+	<p class="status success">
+		{#if data.regressionData.linearRegression.qo > data.regressionData.piecewiseRegression.qo}
+			Piecewise Regression Model
+		{:else}
+			Linear Regression Model
+		{/if} is better based on residual variance
+	</p>
 </div>
 
 <style>
@@ -223,6 +232,7 @@
 	.models {
 		display: flex;
 		flex-direction: column;
+		gap: 1rem;
 		font-size: 1rem;
 		color: light-dark(#555, #aaa);
 	}
