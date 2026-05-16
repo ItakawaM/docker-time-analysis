@@ -25,10 +25,8 @@ type RegressionData struct {
 	YPoints []float64 `json:"yPoints"`
 	XPoints []float64 `json:"xPoints"`
 
-	AlphaCoefficient float64 `json:"alphaCoefficient"`
-	BetaCoefficient  float64 `json:"betaCoefficient"`
-
-	RSquared float64 `json:"rSquared"`
+	LinearRegression    compute.LinearRegression    `json:"linearRegression"`
+	PiecewiseRegression compute.PiecewiseRegression `json:"piecewiseRegression"`
 }
 
 type CorrelationTableData struct {
@@ -60,7 +58,7 @@ type StatTestResult struct {
 }
 
 func NewComputeResponse(sample []*parse.DockerEntry, table *compute.CorrelationTable,
-	alpha float64, beta float64, rSquared float64) *ComputeResponse {
+	linearRegression compute.LinearRegression, piecewiseRegression compute.PiecewiseRegression) *ComputeResponse {
 	yPoints, xPoints := make([]float64, len(sample)), make([]float64, len(sample))
 	for i := range sample {
 		yPoints[i] = sample[i].StartupTime
@@ -77,11 +75,10 @@ func NewComputeResponse(sample []*parse.DockerEntry, table *compute.CorrelationT
 			ConditionalMeanY: table.GetConditionalMeanY(),
 		},
 		RegressionData: RegressionData{
-			YPoints:          yPoints,
-			XPoints:          xPoints,
-			AlphaCoefficient: alpha,
-			BetaCoefficient:  beta,
-			RSquared:         rSquared,
+			YPoints:             yPoints,
+			XPoints:             xPoints,
+			LinearRegression:    linearRegression,
+			PiecewiseRegression: piecewiseRegression,
 		},
 	}
 }
