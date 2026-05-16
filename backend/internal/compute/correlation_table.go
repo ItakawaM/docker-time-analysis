@@ -2,6 +2,7 @@ package compute
 
 import (
 	"fmt"
+	"log"
 	"math"
 
 	"github.com/ItakawaM/docker-time-analysis/internal/parse"
@@ -163,21 +164,25 @@ func (ct *CorrelationTable) ComputeLinearRegression() LinearRegression {
 	return linearRegression
 }
 
-func (ct *CorrelationTable) ComputeExponentialRegression() ExponentialRegression {
+func (ct *CorrelationTable) ComputeExponentialRegression() (ExponentialRegression, error) {
 	x := ct.GetXMids()
 	y := ct.GetConditionalMeanY()
 	weights := ct.GetXMarginals()
 
 	logY := make([]float64, len(y))
 	for i, yi := range y {
-		logY[i] = math.Log(yi)
+		if yi <= 0 {
+			return ExponentialRegression{}, fmt.Errorf("y must be positive")
+		}
+
+		logY[i] = math.Log10(yi)
 	}
 
-	lnB, lnA := stat.LinearRegression(x, logY, weights, false)
+	lgB, lgA := stat.LinearRegression(x, logY, weights, false)
 
 	// y = b*a^x
-	alpha := math.Exp(lnA)
-	beta := math.Exp(lnB)
+	alpha := math.Pow(10, lgA)
+	beta := math.Pow(10, lgB)
 
 	exponentialRegression := ExponentialRegression{
 		AlphaCoefficient: alpha,
@@ -185,7 +190,7 @@ func (ct *CorrelationTable) ComputeExponentialRegression() ExponentialRegression
 	}
 	exponentialRegression.RSquared = ct.ComputeRSquared(exponentialRegression.Predict)
 
-	return exponentialRegression
+	return exponentialRegression, nil
 }
 
 func (ct *CorrelationTable) ComputePiecewiseRegression() (PiecewiseRegression, error) {
@@ -198,21 +203,28 @@ func (ct *CorrelationTable) ComputePiecewiseRegression() (PiecewiseRegression, e
 	best := PiecewiseRegression{}
 	found := false
 
-	for split := 2; split <= n-2; split++ {
+	for split := 2; split <= n-3; split++ {
 		// Compute the left part - linear
 		xL, yL, weightsL := x[:split], y[:split], weights[:split]
 		betaL, alphaL := stat.LinearRegression(xL, yL, weightsL, false)
 
 		// Compute the right part - exponential
 		xR, yR, weightsR := x[split:], y[split:], weights[split:]
-		alphaR, betaR := fitExponentialSegment(xR, yR, weightsR)
+
+		// TODO: REMOVE
+		log.Println(xR, yR)
+
+		alphaR, betaR, err := fitExponentialSegment(xR, yR, weightsR)
+		if err != nil {
+			return PiecewiseRegression{}, fmt.Errorf("cannot compute piecewise function")
+		}
 
 		pf := PiecewiseRegression{
-			Breakpoint:       x[split-1],
-			LinearAlpha:      alphaL,
-			LinearBeta:       betaL,
-			ExponentialAlpha: alphaR,
-			ExponentialBeta:  betaR,
+			Breakpoint:                  x[split-1],
+			LinearAlphaCoefficient:      alphaL,
+			LinearBetaCoefficient:       betaL,
+			ExponentialAlphaCoefficient: alphaR,
+			ExponentialBetaCoefficient:  betaR,
 		}
 		_, _, Qo := ct.computeVariations(pf.Predict)
 
@@ -232,16 +244,21 @@ func (ct *CorrelationTable) ComputePiecewiseRegression() (PiecewiseRegression, e
 	return best, nil
 }
 
-func fitExponentialSegment(x []float64, y []float64, weights []float64) (alpha float64, beta float64) {
+func fitExponentialSegment(x []float64, y []float64, weights []float64) (alpha float64, beta float64, err error) {
 	logY := make([]float64, len(y))
 	for i, yi := range y {
-		logY[i] = math.Log(yi)
+		if yi <= 0 {
+			return 0, 0, fmt.Errorf("y must be positive")
+		}
+
+		logY[i] = math.Log10(yi)
 	}
 
-	lnB, lnA := stat.LinearRegression(x, logY, weights, false)
+	lgB, lgA := stat.LinearRegression(x, logY, weights, false)
 
-	alpha = math.Exp(lnA)
-	beta = math.Exp(lnB)
+	alpha = math.Pow(10, lgA)
+	beta = math.Pow(10, lgB)
+
 	return
 }
 

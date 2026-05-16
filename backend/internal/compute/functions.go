@@ -17,20 +17,20 @@ func (lf *LinearRegression) Predict(x float64) float64 {
 }
 
 type PiecewiseRegression struct {
-	Breakpoint       float64 `json:"breakpoint"`
-	LinearAlpha      float64 `json:"linearAlpha"`
-	LinearBeta       float64 `json:"linearBeta"`
-	ExponentialAlpha float64 `json:"exponentialAlpha"`
-	ExponentialBeta  float64 `json:"exponentialBeta"`
-	RSquared         float64 `json:"rSquared"`
+	Breakpoint                  float64 `json:"breakpoint"`
+	LinearAlphaCoefficient      float64 `json:"linearAlphaCoefficient"`
+	LinearBetaCoefficient       float64 `json:"linearBetaCoefficient"`
+	ExponentialAlphaCoefficient float64 `json:"exponentialAlphaCoefficient"`
+	ExponentialBetaCoefficient  float64 `json:"exponentialBetaCoefficient"`
+	RSquared                    float64 `json:"rSquared"`
 }
 
 func (pf PiecewiseRegression) Predict(x float64) float64 {
 	if x <= pf.Breakpoint {
-		return pf.LinearAlpha*x + pf.LinearBeta
+		return pf.LinearAlphaCoefficient*x + pf.LinearBetaCoefficient
 	}
 
-	return pf.ExponentialBeta * math.Pow(pf.ExponentialAlpha, x)
+	return pf.ExponentialBetaCoefficient * math.Pow(pf.ExponentialAlphaCoefficient, x)
 }
 
 type ExponentialRegression struct {
