@@ -2,7 +2,6 @@ package compute
 
 import (
 	"fmt"
-	"log"
 	"math"
 
 	"github.com/ItakawaM/docker-time-analysis/internal/parse"
@@ -211,9 +210,6 @@ func (ct *CorrelationTable) ComputePiecewiseRegression() (PiecewiseRegression, e
 		// Compute the right part - exponential
 		xR, yR, weightsR := x[split:], y[split:], weights[split:]
 
-		// TODO: REMOVE
-		log.Println(xR, yR)
-
 		alphaR, betaR, err := fitExponentialSegment(xR, yR, weightsR)
 		if err != nil {
 			return PiecewiseRegression{}, fmt.Errorf("cannot compute piecewise function")
@@ -272,17 +268,29 @@ func (ct *CorrelationTable) ComputeRSquared(predictFunction func(x float64) floa
 	return
 }
 
-func (ct *CorrelationTable) ComputeFisherStatistics(predictFunction func(x float64) float64, significanceLevel float64, mParams int) (empirical float64, critical float64) {
+type StatTestResult struct {
+	Value     float64 `json:"value,omitempty"`
+	Empirical float64 `json:"empirical"`
+	Critical  float64 `json:"critical"`
+	Adequate  bool    `json:"adequate"`
+}
+
+func (ct *CorrelationTable) ComputeFisherStatistics(predictFunction func(x float64) float64,
+	significanceLevel float64, mParams int) StatTestResult {
 	_, Qp, Qo := ct.computeVariations(predictFunction)
 	df1, df2 := float64(mParams-1), float64(mParams)
-	empirical = Qp * df2 / (Qo * df1)
+	empirical := Qp * df2 / (Qo * df1)
 
-	critical = distuv.F{
+	critical := distuv.F{
 		D1: df1,
 		D2: df2,
 	}.Quantile(1 - significanceLevel)
 
-	return
+	return StatTestResult{
+		Empirical: empirical,
+		Critical:  critical,
+		Adequate:  empirical > critical,
+	}
 }
 
 func (ct *CorrelationTable) computeVariations(predictFunction func(x float64) float64) (Q, Qp, Qo float64) {
@@ -306,24 +314,29 @@ func (ct *CorrelationTable) computeVariations(predictFunction func(x float64) fl
 	return
 }
 
-func (ct *CorrelationTable) ComputePearsonCorrelation(significanceLevel float64) (r float64, empirical float64, critical float64) {
+func (ct *CorrelationTable) ComputePearsonCorrelation(significanceLevel float64) StatTestResult {
 	x := ct.GetXMids()
 	y := ct.GetConditionalMeanY()
 	weights := ct.GetXMarginals()
 
-	r = stat.Correlation(x, y, weights)
+	r := stat.Correlation(x, y, weights)
 
 	df := float64(ct.totalValues - 2.0)
-	empirical = r * math.Sqrt(df) / math.Sqrt(1.0-r*r)
+	empirical := r * math.Sqrt(df) / math.Sqrt(1.0-r*r)
 
 	distribution := distuv.StudentsT{
 		Mu:    0,
 		Sigma: 1,
 		Nu:    df,
 	}
-	critical = distribution.Quantile(1.0 - significanceLevel/2)
+	critical := distribution.Quantile(1.0 - significanceLevel/2)
 
-	return
+	return StatTestResult{
+		Value:     r,
+		Empirical: empirical,
+		Critical:  critical,
+		Adequate:  empirical > critical,
+	}
 }
 
 func (ct *CorrelationTable) GetXMids() []float64 {

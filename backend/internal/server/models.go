@@ -1,8 +1,6 @@
 package server
 
 import (
-	"math"
-
 	"github.com/ItakawaM/docker-time-analysis/internal/compute"
 	"github.com/ItakawaM/docker-time-analysis/internal/parse"
 )
@@ -46,15 +44,9 @@ type SignificanceRequest struct {
 }
 
 type SignificanceResponse struct {
-	Fisher  StatTestResult `json:"fisher"`
-	Pearson StatTestResult `json:"pearson"`
-}
-
-type StatTestResult struct {
-	Value     float64 `json:"value,omitempty"`
-	Empirical float64 `json:"empirical"`
-	Critical  float64 `json:"critical"`
-	Adequate  bool    `json:"adequate"`
+	FisherLinear    compute.StatTestResult `json:"fisherLinear"`
+	FisherPiecewise compute.StatTestResult `json:"fisherPiecewise"`
+	Pearson         compute.StatTestResult `json:"pearson"`
 }
 
 func NewComputeResponse(sample []*parse.DockerEntry, table *compute.CorrelationTable,
@@ -83,19 +75,10 @@ func NewComputeResponse(sample []*parse.DockerEntry, table *compute.CorrelationT
 	}
 }
 
-func NewSignificanceResponse(fisherEmpirical float64, fisherCritical float64,
-	pearsonCorrelation float64, pearsonEmpirical float64, pearsonCritical float64) *SignificanceResponse {
+func NewSignificanceResponse(fisherLinear compute.StatTestResult, fisherPiecewise compute.StatTestResult, pearson compute.StatTestResult) *SignificanceResponse {
 	return &SignificanceResponse{
-		Fisher: StatTestResult{
-			Empirical: fisherEmpirical,
-			Critical:  fisherCritical,
-			Adequate:  fisherEmpirical > fisherCritical,
-		},
-		Pearson: StatTestResult{
-			Value:     pearsonCorrelation,
-			Empirical: pearsonEmpirical,
-			Critical:  pearsonCritical,
-			Adequate:  math.Abs(pearsonEmpirical) > pearsonCritical,
-		},
+		FisherLinear:    fisherLinear,
+		FisherPiecewise: fisherPiecewise,
+		Pearson:         pearson,
 	}
 }

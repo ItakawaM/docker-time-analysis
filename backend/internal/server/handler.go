@@ -144,7 +144,7 @@ func (s *Server) HandleSignificance(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.mu.RLock()
-	table, linearRegression := s.table, s.linearRegression
+	table, linearRegression, piecewiseRegression := s.table, s.linearRegression, s.piecewiseRegression
 	s.mu.RUnlock()
 
 	if table == nil {
@@ -152,11 +152,11 @@ func (s *Server) HandleSignificance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fisherEmpirical, fisherCritical := table.ComputeFisherStatistics(linearRegression.Predict, request.SignificanceLevel, 2)
-	pearsonCorrelation, pearsonEmpirical, pearsonCritical := table.ComputePearsonCorrelation(request.SignificanceLevel)
+	fisherLinear := table.ComputeFisherStatistics(linearRegression.Predict, request.SignificanceLevel, 2)
+	fisherPiecewise := table.ComputeFisherStatistics(piecewiseRegression.Predict, request.SignificanceLevel, 5)
+	pearson := table.ComputePearsonCorrelation(request.SignificanceLevel)
 
-	if err := s.writeJSONResponse(w, http.StatusOK, NewSignificanceResponse(fisherEmpirical, fisherCritical,
-		pearsonCorrelation, pearsonEmpirical, pearsonCritical)); err != nil {
+	if err := s.writeJSONResponse(w, http.StatusOK, NewSignificanceResponse(fisherLinear, fisherPiecewise, pearson)); err != nil {
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 	}
 }
