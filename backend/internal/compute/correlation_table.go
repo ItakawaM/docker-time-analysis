@@ -146,36 +146,160 @@ func (ct *CorrelationTable) assignConditionalMean() {
 	}
 }
 
-func (ct *CorrelationTable) ComputeLinearRegressionParams() (alpha float64, beta float64) {
+func (ct *CorrelationTable) ComputeLinearRegression() LinearRegression {
 	x := ct.GetXMids()
 	y := ct.GetConditionalMeanY()
 	weights := ct.GetXMarginals()
 
 	// y = ax + b
-	beta, alpha = stat.LinearRegression(x, y, weights, false)
+	beta, alpha := stat.LinearRegression(x, y, weights, false)
+
+	linearRegression := LinearRegression{
+		AlphaCoefficient: alpha,
+		BetaCoefficient:  beta,
+	}
+	linearRegression.RSquared = ct.ComputeRSquared(linearRegression.Predict)
+	_, _, Qo := ct.computeVariations(linearRegression.Predict)
+	linearRegression.Qo = Qo
+
+	return linearRegression
+}
+
+func (ct *CorrelationTable) ComputeExponentialRegression() (ExponentialRegression, error) {
+	x := ct.GetXMids()
+	y := ct.GetConditionalMeanY()
+	weights := ct.GetXMarginals()
+
+	logY := make([]float64, len(y))
+	for i, yi := range y {
+		if yi <= 0 {
+			return ExponentialRegression{}, fmt.Errorf("y must be positive")
+		}
+
+		logY[i] = math.Log10(yi)
+	}
+
+	lgB, lgA := stat.LinearRegression(x, logY, weights, false)
+
+	// y = b*a^x
+	alpha := math.Pow(10, lgA)
+	beta := math.Pow(10, lgB)
+
+	exponentialRegression := ExponentialRegression{
+		AlphaCoefficient: alpha,
+		BetaCoefficient:  beta,
+	}
+	exponentialRegression.RSquared = ct.ComputeRSquared(exponentialRegression.Predict)
+	_, _, Qo := ct.computeVariations(exponentialRegression.Predict)
+	exponentialRegression.Qo = Qo
+
+	return exponentialRegression, nil
+}
+
+func (ct *CorrelationTable) ComputePiecewiseRegression() (PiecewiseRegression, error) {
+	x := ct.GetXMids()
+	y := ct.GetConditionalMeanY()
+	weights := ct.GetXMarginals()
+
+	n := len(x)
+	bestQo := math.Inf(1)
+	best := PiecewiseRegression{}
+	found := false
+
+	for split := 2; split <= n-3; split++ {
+		// Compute the left part - linear
+		xL, yL, weightsL := x[:split], y[:split], weights[:split]
+		betaL, alphaL := stat.LinearRegression(xL, yL, weightsL, false)
+
+		// Compute the right part - exponential
+		xR, yR, weightsR := x[split:], y[split:], weights[split:]
+
+		alphaR, betaR, err := fitExponentialSegment(xR, yR, weightsR)
+		if err != nil {
+			return PiecewiseRegression{}, fmt.Errorf("cannot compute piecewise function")
+		}
+
+		pf := PiecewiseRegression{
+			Breakpoint:                  x[split-1],
+			LinearAlphaCoefficient:      alphaL,
+			LinearBetaCoefficient:       betaL,
+			ExponentialAlphaCoefficient: alphaR,
+			ExponentialBetaCoefficient:  betaR,
+		}
+		_, _, Qo := ct.computeVariations(pf.Predict)
+
+		if Qo < bestQo {
+			bestQo = Qo
+			best = pf
+			found = true
+		}
+	}
+
+	if !found {
+		return PiecewiseRegression{}, fmt.Errorf("no valid breakpoint found")
+	}
+
+	best.RSquared = ct.ComputeRSquared(best.Predict)
+	_, _, Qo := ct.computeVariations(best.Predict)
+	best.Qo = Qo
+
+	return best, nil
+}
+
+func fitExponentialSegment(x []float64, y []float64, weights []float64) (alpha float64, beta float64, err error) {
+	logY := make([]float64, len(y))
+	for i, yi := range y {
+		if yi <= 0 {
+			return 0, 0, fmt.Errorf("y must be positive")
+		}
+
+		logY[i] = math.Log10(yi)
+	}
+
+	lgB, lgA := stat.LinearRegression(x, logY, weights, false)
+
+	alpha = math.Pow(10, lgA)
+	beta = math.Pow(10, lgB)
+
 	return
 }
 
-func (ct *CorrelationTable) ComputeRSquared(alpha float64, beta float64) (rSquared float64) {
-	Q, _, Qo := ct.computeVariations(alpha, beta)
+func (ct *CorrelationTable) ComputeRSquared(predictFunction func(x float64) float64) (rSquared float64) {
+	Q, _, Qo := ct.computeVariations(predictFunction)
+	if Q == 0 {
+		return
+	}
+
 	rSquared = 1 - Qo/Q
 	return
 }
 
-func (ct *CorrelationTable) ComputeFisherStatistics(alpha float64, beta float64, significanceLevel float64, mParams int) (empirical float64, critical float64) {
-	_, Qp, Qo := ct.computeVariations(alpha, beta)
-	df1, df2 := float64(mParams-1), float64(mParams)
-	empirical = Qp * df2 / (Qo * df1)
+type StatTestResult struct {
+	Value     float64 `json:"value,omitempty"`
+	Empirical float64 `json:"empirical"`
+	Critical  float64 `json:"critical"`
+	Adequate  bool    `json:"adequate"`
+}
 
-	critical = distuv.F{
+func (ct *CorrelationTable) ComputeFisherStatistics(predictFunction func(x float64) float64,
+	significanceLevel float64, mParams int) StatTestResult {
+	_, Qp, Qo := ct.computeVariations(predictFunction)
+	df1, df2 := float64(mParams-1), float64(mParams)
+	empirical := Qp * df2 / (Qo * df1)
+
+	critical := distuv.F{
 		D1: df1,
 		D2: df2,
 	}.Quantile(1 - significanceLevel)
 
-	return
+	return StatTestResult{
+		Empirical: empirical,
+		Critical:  critical,
+		Adequate:  empirical > critical,
+	}
 }
 
-func (ct *CorrelationTable) computeVariations(alpha, beta float64) (Q, Qp, Qo float64) {
+func (ct *CorrelationTable) computeVariations(predictFunction func(x float64) float64) (Q, Qp, Qo float64) {
 	x := ct.GetXMids()
 	y := ct.GetConditionalMeanY()
 	weights := ct.GetXMarginals()
@@ -183,7 +307,7 @@ func (ct *CorrelationTable) computeVariations(alpha, beta float64) (Q, Qp, Qo fl
 
 	for i := range x {
 		ni := weights[i]
-		yTheoretical := beta + alpha*x[i]
+		yTheoretical := predictFunction(x[i])
 
 		diffTotal := y[i] - yMean
 		diffResidual := y[i] - yTheoretical
@@ -196,24 +320,29 @@ func (ct *CorrelationTable) computeVariations(alpha, beta float64) (Q, Qp, Qo fl
 	return
 }
 
-func (ct *CorrelationTable) ComputePearsonCorrelation(significanceLevel float64) (r float64, empirical float64, critical float64) {
+func (ct *CorrelationTable) ComputePearsonCorrelation(significanceLevel float64) StatTestResult {
 	x := ct.GetXMids()
 	y := ct.GetConditionalMeanY()
 	weights := ct.GetXMarginals()
 
-	r = stat.Correlation(x, y, weights)
+	r := stat.Correlation(x, y, weights)
 
 	df := float64(ct.totalValues - 2.0)
-	empirical = r * math.Sqrt(df) / math.Sqrt(1.0-r*r)
+	empirical := r * math.Sqrt(df) / math.Sqrt(1.0-r*r)
 
 	distribution := distuv.StudentsT{
 		Mu:    0,
 		Sigma: 1,
 		Nu:    df,
 	}
-	critical = distribution.Quantile(1.0 - significanceLevel/2)
+	critical := distribution.Quantile(1.0 - significanceLevel/2)
 
-	return
+	return StatTestResult{
+		Value:     r,
+		Empirical: empirical,
+		Critical:  critical,
+		Adequate:  empirical > critical,
+	}
 }
 
 func (ct *CorrelationTable) GetXMids() []float64 {
