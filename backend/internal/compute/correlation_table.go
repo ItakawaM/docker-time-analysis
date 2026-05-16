@@ -159,6 +159,8 @@ func (ct *CorrelationTable) ComputeLinearRegression() LinearRegression {
 		BetaCoefficient:  beta,
 	}
 	linearRegression.RSquared = ct.ComputeRSquared(linearRegression.Predict)
+	_, _, Qo := ct.computeVariations(linearRegression.Predict)
+	linearRegression.Qo = Qo
 
 	return linearRegression
 }
@@ -188,6 +190,8 @@ func (ct *CorrelationTable) ComputeExponentialRegression() (ExponentialRegressio
 		BetaCoefficient:  beta,
 	}
 	exponentialRegression.RSquared = ct.ComputeRSquared(exponentialRegression.Predict)
+	_, _, Qo := ct.computeVariations(exponentialRegression.Predict)
+	exponentialRegression.Qo = Qo
 
 	return exponentialRegression, nil
 }
@@ -236,6 +240,8 @@ func (ct *CorrelationTable) ComputePiecewiseRegression() (PiecewiseRegression, e
 	}
 
 	best.RSquared = ct.ComputeRSquared(best.Predict)
+	_, _, Qo := ct.computeVariations(best.Predict)
+	best.Qo = Qo
 
 	return best, nil
 }

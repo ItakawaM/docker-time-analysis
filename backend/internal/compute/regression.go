@@ -10,6 +10,7 @@ type LinearRegression struct {
 	AlphaCoefficient float64 `json:"alphaCoefficient"`
 	BetaCoefficient  float64 `json:"betaCoefficient"`
 	RSquared         float64 `json:"rSquared"`
+	Qo               float64 `json:"qo"`
 }
 
 func (lf *LinearRegression) Predict(x float64) float64 {
@@ -23,6 +24,7 @@ type PiecewiseRegression struct {
 	ExponentialAlphaCoefficient float64 `json:"exponentialAlphaCoefficient"`
 	ExponentialBetaCoefficient  float64 `json:"exponentialBetaCoefficient"`
 	RSquared                    float64 `json:"rSquared"`
+	Qo                          float64 `json:"qo"`
 }
 
 func (pf PiecewiseRegression) Predict(x float64) float64 {
@@ -37,6 +39,7 @@ type ExponentialRegression struct {
 	AlphaCoefficient float64 `json:"alphaCoefficient"`
 	BetaCoefficient  float64 `json:"betaCoefficient"`
 	RSquared         float64 `json:"rSquared"`
+	Qo               float64 `json:"qo"`
 }
 
 func (ef *ExponentialRegression) Predict(x float64) float64 {
