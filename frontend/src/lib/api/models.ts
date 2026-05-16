@@ -28,9 +28,22 @@ export type RegressionData = {
 	yPoints: number[];
 	xPoints: number[];
 
+	linearRegression: LinearRegression;
+	piecewiseRegression: PiecewiseRegression;
+};
+
+export type PiecewiseRegression = {
+	breakpoint: number;
+	linearAlphaCoefficient: number;
+	linearBetaCoefficient: number;
+	exponentialAlphaCoefficient: number;
+	exponentialBetaCoefficient: number;
+	rSquared: number;
+};
+
+export type LinearRegression = {
 	alphaCoefficient: number;
 	betaCoefficient: number;
-
 	rSquared: number;
 };
 
