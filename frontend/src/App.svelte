@@ -3,6 +3,7 @@
 	import { postSignificance } from './lib/api/services';
 	import CorrelationTable from './lib/components/CorrelationTable.svelte';
 	import CSVFileInput from './lib/components/CSVFileInput.svelte';
+	import PredictionInput from './lib/components/PredictionInput.svelte';
 	import RegressionPlot from './lib/components/RegressionPlot.svelte';
 	import SampleSizeSlider from './lib/components/SampleSizeSlider.svelte';
 	import SignificanceLevelSlider from './lib/components/SignificanceLevelSlider.svelte';
@@ -38,18 +39,19 @@
 </script>
 
 <h1 id="title">Docker Time Analyzer</h1>
+<p id="subtitle">Container startup regression &amp; significance testing</p>
 
 <section>
 	<p class="instructions">
-		The .csv file must contain <code>n_containers, startup_ms</code> columns and have at least 50 entries
+		Upload a <code>.csv</code> with <code>n_containers</code> and <code>startup_ms</code> columns — minimum
+		50 rows
 	</p>
-
 	<CSVFileInput onSuccess={handleUploadSuccess} onError={handleUploadError} />
 </section>
 
 {#if uploadResponse}
 	<hr />
-	<p class="instructions">Select the amount of entries you would like to sample</p>
+	<p class="instructions">Choose how many rows to sample</p>
 	<section>
 		{#key uploadResponse}
 			<SampleSizeSlider
@@ -62,10 +64,7 @@
 {/if}
 
 {#if computeResponse}
-	<hr />
-	<p class="instructions">
-		Response time (ms) vs. Docker container count — joint frequency distribution
-	</p>
+	<p class="instructions">Startup time (ms) vs. container count — frequency distribution</p>
 	<section>
 		<CorrelationTable data={computeResponse} />
 		<RegressionPlot data={computeResponse} />
@@ -73,8 +72,18 @@
 {/if}
 
 {#if computeResponse}
+	<p class="instructions">Predict startup time</p>
+	<section>
+		<PredictionInput
+			linearRegressionModel={computeResponse.regressionData.linearRegression}
+			piecewiseRegressionModel={computeResponse.regressionData.piecewiseRegression}
+		/>
+	</section>
+{/if}
+
+{#if computeResponse}
 	<hr />
-	<p class="instructions">Select the significance level for regression model adequecy validation</p>
+	<p class="instructions">Choose a significance level to validate the regression model</p>
 	<section>
 		<SignificanceLevelSlider
 			{computeResponse}
@@ -85,8 +94,7 @@
 {/if}
 
 {#if significanceResponse}
-	<hr />
-	<p class="instructions">Regression model adequecy validation</p>
+	<p class="instructions">Regression model validation results</p>
 	<section>
 		<SignificanceTable data={significanceResponse} />
 	</section>
@@ -95,12 +103,18 @@
 <style>
 	#title {
 		text-align: center;
-		font-size: 2.2rem;
+		font-size: 2rem;
+		font-weight: 700;
 	}
 
-	hr {
-		margin-top: 1rem;
-		margin-bottom: 1rem;
-		border-color: light-dark(#d0d0d0, #3a3a3a);
+	#subtitle {
+		text-align: center;
+		font-size: 1.2rem;
+		color: light-dark(#666, #888);
+		text-transform: uppercase;
+	}
+
+	section {
+		margin-block: 1rem;
 	}
 </style>

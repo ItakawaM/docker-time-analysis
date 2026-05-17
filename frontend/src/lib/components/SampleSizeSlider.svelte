@@ -11,12 +11,12 @@
 	let { totalRows, onSuccess, onError }: Props = $props();
 
 	type Status = 'idle' | 'success' | 'error';
-	let status = $state<Status>('idle');
+	let status: Status = $state<Status>('idle');
 
 	let errorMessage: string = $state('');
 	let successMessage: string = $state('');
 
-	const min = 50;
+	const min: number = 50;
 	let value: number = $state(min);
 
 	let debounced: number = $state(min);
@@ -33,7 +33,7 @@
 	});
 
 	$effect(() => {
-		const controller = new AbortController();
+		const controller: AbortController = new AbortController();
 
 		postCompute({ sampleSize: debounced }, controller.signal)
 			.then((data) => {
@@ -45,7 +45,7 @@
 			.catch((err) => {
 				if (err.name === 'AbortError') return;
 
-				const error = err instanceof Error ? err : new Error('Unknown error');
+				const error: Error = err instanceof Error ? err : new Error('Unknown error');
 				errorMessage = error.message;
 				status = 'error';
 
@@ -84,7 +84,7 @@
 		border-radius: 0.5rem;
 		border: 1px solid light-dark(#d0d0d0, #3a3a3a);
 		background-color: light-dark(#f5f5f5, #1e1e1e);
-		padding: 0.5rem 0.5rem;
+		padding: 0.5rem;
 	}
 
 	.slider-block input[type='range'] {
