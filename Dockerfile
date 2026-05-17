@@ -7,14 +7,7 @@ COPY frontend/package*.json ./
 
 RUN npm ci
 
-COPY frontend/src ./src
-COPY frontend/public ./public 2>/dev/null || true
-COPY frontend/*.ts ./
-COPY frontend/*.js ./
-COPY frontend/*.json ./
-COPY frontend/*.html ./
-COPY frontend/svelte.config.js ./
-COPY frontend/vite.config.ts ./
+COPY frontend/ ./
 
 RUN npm run build
 

@@ -44,9 +44,9 @@ func NewServer() *Server {
 // InitAndServe initializes HTTP routes and starts listening for requests on the specified port.
 // It registers handlers for /upload, /compute, /compute/significance endpoints, and serves static files.
 func (s *Server) InitAndServe(port int) {
-	s.mux.HandleFunc("POST /upload", s.HandleUpload)
-	s.mux.HandleFunc("POST /compute", s.HandleCompute)
-	s.mux.HandleFunc("POST /compute/significance", s.HandleSignificance)
+	s.mux.HandleFunc("POST /api/upload", s.HandleUpload)
+	s.mux.HandleFunc("POST /api/compute", s.HandleCompute)
+	s.mux.HandleFunc("POST /api/compute/significance", s.HandleSignificance)
 
 	// Serve static files from the dist directory
 	distPath := "/app/dist"
