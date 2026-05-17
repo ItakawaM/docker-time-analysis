@@ -10,11 +10,14 @@ import (
 	"github.com/gocarina/gocsv"
 )
 
+// DockerEntry represents a single data point recording Docker container count and startup time.
 type DockerEntry struct {
 	DockerCount float64 `json:"dockerCount" csv:"n_containers"`
 	StartupTime float64 `json:"startupTime" csv:"startup_ms"`
 }
 
+// LoadDataFromFolder loads Docker container and startup time data from all CSV files in a directory.
+// It returns a slice of DockerEntry records parsed from the CSV files or an error if no CSV files are found or parsing fails.
 func LoadDataFromFolder(path string) ([]*DockerEntry, error) {
 	matches, err := filepath.Glob(filepath.Join(path, "*.csv"))
 	if err != nil {
@@ -48,6 +51,8 @@ func LoadDataFromFolder(path string) ([]*DockerEntry, error) {
 	return data, nil
 }
 
+// LoadDataFromFormFile parses Docker container and startup time data from a CSV file provided via HTTP multipart form upload.
+// It returns a slice of DockerEntry records or an error if the file format is invalid.
 func LoadDataFromFormFile(file multipart.File) ([]*DockerEntry, error) {
 	if err := validateHeaders(file); err != nil {
 		return nil, err
