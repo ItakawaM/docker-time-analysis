@@ -53,9 +53,12 @@ data/                 - Sample CSV data files
 - Go 1.26.1 or later
 - Node.js 18+ with npm
 
-### Run as Docker Container
+### Run as Docker Compose
 
-**TODO:**
+```bash
+git clone https://github.com/ItakawaM/docker-time-analysis
+docker-compose up -d
+```
 
 ### Run Manually
 
