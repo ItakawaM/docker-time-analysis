@@ -89,7 +89,7 @@
 		border-radius: 0.5rem;
 		border: 1px solid light-dark(#d0d0d0, #3a3a3a);
 		background-color: light-dark(#f5f5f5, #1e1e1e);
-		padding: 0.5rem 0.5rem;
+		padding: 0.5rem;
 	}
 
 	.slider-block input[type='range'] {

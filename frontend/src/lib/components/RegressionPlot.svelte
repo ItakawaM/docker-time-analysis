@@ -234,7 +234,7 @@
 		flex-direction: column;
 		gap: 1rem;
 		font-size: 1rem;
-		color: light-dark(#555, #aaa);
+		color: light-dark(#3a3a3a, #aaa);
 	}
 
 	.model {
@@ -245,7 +245,7 @@
 		font-size: 0.85rem;
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
-		color: light-dark(#555, #aaa);
+		color: light-dark(#3a3a3a, #aaa);
 		margin-bottom: 0.15rem;
 	}
 </style>

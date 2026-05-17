@@ -66,7 +66,7 @@
 	.input-wrapper {
 		display: flex;
 		flex-direction: column;
-		gap: 0.4rem;
+		gap: 0.5rem;
 	}
 
 	input[type='file'] {
@@ -74,7 +74,7 @@
 		border: 1px solid light-dark(#d0d0d0, #3a3a3a);
 		background-color: light-dark(#f5f5f5, #1e1e1e);
 		color: inherit;
-		padding: 0.5rem 0.5rem;
+		padding: 0.5rem;
 		cursor: pointer;
 
 		&:disabled {
