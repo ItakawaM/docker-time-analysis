@@ -30,6 +30,8 @@ func (s *Server) validateRequest(w http.ResponseWriter, r *http.Request, method 
 	return true
 }
 
+// HandleUpload handles the POST /upload endpoint, parsing CSV files containing Docker container and startup time data.
+// It validates the file format, ensures minimum data requirements, and stores the data for later computation.
 func (s *Server) HandleUpload(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, 100<<20) // 100mb limit
 	if !s.validateRequest(w, r, http.MethodPost, FormData) {
@@ -71,6 +73,8 @@ func (s *Server) HandleUpload(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// HandleCompute handles the POST /compute endpoint, computing regression models and correlation statistics from the uploaded data.
+// It samples data, builds a correlation table, and computes linear, piecewise, and exponential regression models.
 func (s *Server) HandleCompute(w http.ResponseWriter, r *http.Request) {
 	if !s.validateRequest(w, r, http.MethodPost, JSON) {
 		return
@@ -134,6 +138,8 @@ func (s *Server) HandleCompute(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// HandleSignificance handles the POST /compute/significance endpoint, performing statistical tests on previously computed models.
+// It calculates Fisher F-test results for each regression model and Pearson correlation significance at the specified significance level.
 func (s *Server) HandleSignificance(w http.ResponseWriter, r *http.Request) {
 	if !s.validateRequest(w, r, http.MethodPost, JSON) {
 		return

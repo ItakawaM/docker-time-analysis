@@ -37,6 +37,8 @@ func buildIntervals(min float64, max float64, count int) ([]interval, error) {
 	return intervals, nil
 }
 
+// CorrelationTable represents a bivariate frequency distribution table for analyzing correlations between variables.
+// It stores frequency data, marginal distributions, and conditional means used for regression analysis.
 type CorrelationTable struct {
 	totalValues int
 
@@ -46,11 +48,13 @@ type CorrelationTable struct {
 	// (y, x) -> row: y, column: x
 	frequencies *mat.Dense
 
-	xMarginals       *mat.VecDense // column totals
-	yMarginals       *mat.VecDense // row totals
+	xMarginals       *mat.VecDense // column sums
+	yMarginals       *mat.VecDense // row sums
 	conditionalMeanY *mat.VecDense
 }
 
+// NewCorrelationTable creates a new CorrelationTable from Docker entry data using Sturges' rule for interval binning.
+// It returns the initialized table with computed frequency distributions and marginals, or an error if construction fails.
 func NewCorrelationTable(data []*parse.DockerEntry) (*CorrelationTable, error) {
 	minX, maxX := data[0].DockerCount, data[0].DockerCount
 	minY, maxY := data[0].StartupTime, data[0].StartupTime
@@ -146,6 +150,7 @@ func (ct *CorrelationTable) assignConditionalMean() {
 	}
 }
 
+// ComputeLinearRegression computes and returns a linear regression model from the correlation table data.
 func (ct *CorrelationTable) ComputeLinearRegression() LinearRegression {
 	x := ct.GetXMids()
 	y := ct.GetConditionalMeanY()
@@ -166,6 +171,8 @@ func (ct *CorrelationTable) ComputeLinearRegression() LinearRegression {
 	return linearRegression
 }
 
+// ComputeExponentialRegression computes and returns an exponential regression model from the correlation table data.
+// It returns an error if the data contains non-positive values that cannot be log-transformed.
 func (ct *CorrelationTable) ComputeExponentialRegression() (ExponentialRegression, error) {
 	x := ct.GetXMids()
 	y := ct.GetConditionalMeanY()
@@ -198,6 +205,8 @@ func (ct *CorrelationTable) ComputeExponentialRegression() (ExponentialRegressio
 	return exponentialRegression, nil
 }
 
+// ComputePiecewiseRegression computes and returns the best-fit piecewise linear regression model by finding the optimal breakpoint.
+// It returns an error if no valid breakpoint can be found.
 func (ct *CorrelationTable) ComputePiecewiseRegression() (PiecewiseRegression, error) {
 	x := ct.GetXMids()
 	y := ct.GetConditionalMeanY()
@@ -257,6 +266,8 @@ func (ct *CorrelationTable) ComputePiecewiseRegression() (PiecewiseRegression, e
 	return best, nil
 }
 
+// ComputeRSquared calculates the coefficient of determination (R-squared) for a prediction function.
+// It measures the proportion of variance explained by the model.
 func (ct *CorrelationTable) ComputeRSquared(predictFunction func(x float64) float64) (rSquared float64) {
 	Q, _, Qo := ct.computeVariations(predictFunction)
 	if Q == 0 {
@@ -267,6 +278,8 @@ func (ct *CorrelationTable) ComputeRSquared(predictFunction func(x float64) floa
 	return
 }
 
+// StatTestResult represents the result of a statistical significance test.
+// It includes the test statistic value (for Pearson correlation), empirical test result, critical value, and adequacy judgment.
 type StatTestResult struct {
 	Value     float64 `json:"value,omitempty"`
 	Empirical float64 `json:"empirical"`
@@ -274,6 +287,8 @@ type StatTestResult struct {
 	Adequate  bool    `json:"adequate"`
 }
 
+// ComputeFisherStatistics computes Fisher's F-test statistic for assessing model adequacy at a given significance level.
+// It returns the empirical test value, critical value, and a boolean indicating if the model is adequate.
 func (ct *CorrelationTable) ComputeFisherStatistics(predictFunction func(x float64) float64,
 	significanceLevel float64, mParams int) StatTestResult {
 	_, Qp, Qo := ct.computeVariations(predictFunction)
@@ -313,6 +328,7 @@ func (ct *CorrelationTable) computeVariations(predictFunction func(x float64) fl
 	return
 }
 
+// ComputePearsonCorrelation computes the Pearson correlation coefficient and its statistical significance at the given significance level.
 func (ct *CorrelationTable) ComputePearsonCorrelation(significanceLevel float64) StatTestResult {
 	x := ct.GetXMids()
 	y := ct.GetConditionalMeanY()
@@ -338,6 +354,7 @@ func (ct *CorrelationTable) ComputePearsonCorrelation(significanceLevel float64)
 	}
 }
 
+// GetXMids returns the midpoint values of all X-axis (Docker count) intervals.
 func (ct *CorrelationTable) GetXMids() []float64 {
 	xMids := make([]float64, len(ct.xIntervals))
 	for i := range xMids {
@@ -347,6 +364,7 @@ func (ct *CorrelationTable) GetXMids() []float64 {
 	return xMids
 }
 
+// GetYMids returns the midpoint values of all Y-axis (startup time) intervals.
 func (ct *CorrelationTable) GetYMids() []float64 {
 	yMids := make([]float64, len(ct.yIntervals))
 	for i := range yMids {
@@ -356,6 +374,7 @@ func (ct *CorrelationTable) GetYMids() []float64 {
 	return yMids
 }
 
+// GetXMarginals returns the marginal frequencies for each X-axis interval (column sums).
 func (ct *CorrelationTable) GetXMarginals() []float64 {
 	xMarginals := make([]float64, len(ct.xMarginals.RawVector().Data))
 	for i := range xMarginals {
@@ -365,6 +384,7 @@ func (ct *CorrelationTable) GetXMarginals() []float64 {
 	return xMarginals
 }
 
+// GetYMarginals returns the marginal frequencies for each Y-axis interval (row sums).
 func (ct *CorrelationTable) GetYMarginals() []float64 {
 	yMarginals := make([]float64, len(ct.yMarginals.RawVector().Data))
 	for i := range yMarginals {
@@ -374,6 +394,7 @@ func (ct *CorrelationTable) GetYMarginals() []float64 {
 	return yMarginals
 }
 
+// GetConditionalMeanY returns the conditional mean Y values for each X interval.
 func (ct *CorrelationTable) GetConditionalMeanY() []float64 {
 	conditionalY := make([]float64, len(ct.conditionalMeanY.RawVector().Data))
 	for i := range conditionalY {
@@ -383,6 +404,7 @@ func (ct *CorrelationTable) GetConditionalMeanY() []float64 {
 	return conditionalY
 }
 
+// GetFrequencies returns all frequency values from the bivariate frequency table as a flat slice.
 func (ct *CorrelationTable) GetFrequencies() []float64 {
 	return append([]float64(nil), ct.frequencies.RawMatrix().Data...)
 }
