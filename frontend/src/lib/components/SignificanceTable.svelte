@@ -10,7 +10,7 @@
 </script>
 
 <div class="tables">
-	{#each [{ label: 'Fisher (Linear)', result: data.fisherLinear }, { label: 'Fisher (Piecewise)', result: data.fisherPiecewise }, { label: 'Pearson', result: data.pearson }] as { label, result }}
+	{#each [{ label: 'Fisher (Linear)', result: data.fisherLinear }, { label: 'Fisher (Piecewise)', result: data.fisherPiecewise }, { label: 'Fisher (Exponential)', result: data.fisherExponential }, { label: 'Pearson', result: data.pearson }] as { label, result }}
 		<table>
 			<thead>
 				<tr>
