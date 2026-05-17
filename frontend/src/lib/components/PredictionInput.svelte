@@ -1,31 +1,19 @@
 <script lang="ts">
-	import { linear } from 'svelte/easing';
-	import type { LinearRegression, PiecewiseRegression } from '../api/models';
+	import {
+		predict,
+		type ExponentialRegression,
+		type LinearRegression,
+		type PiecewiseRegression,
+		type RegressionModel
+	} from '../api/regressions';
 	import { debounce, format } from './helpers';
 
 	type Props = {
-		linearRegressionModel: LinearRegression;
-		piecewiseRegressionModel: PiecewiseRegression;
+		linearRegression: LinearRegression;
+		piecewiseRegression: PiecewiseRegression;
+		exponentialRegression: ExponentialRegression;
 	};
-	let { linearRegressionModel, piecewiseRegressionModel }: Props = $props();
-
-	function predict(value: number): number {
-		if (linearRegressionModel.rSquared > piecewiseRegressionModel.rSquared) {
-			return linearRegressionModel.alphaCoefficient * value + linearRegressionModel.betaCoefficient;
-		}
-
-		if (value < piecewiseRegressionModel.breakpoint) {
-			return (
-				piecewiseRegressionModel.linearAlphaCoefficient * value +
-				piecewiseRegressionModel.linearBetaCoefficient
-			);
-		}
-
-		return (
-			piecewiseRegressionModel.exponentialBetaCoefficient *
-			Math.pow(piecewiseRegressionModel.exponentialAlphaCoefficient, value)
-		);
-	}
+	let { linearRegression, piecewiseRegression, exponentialRegression }: Props = $props();
 
 	const min: number = 0;
 
@@ -43,18 +31,19 @@
 		setDebounced(value);
 	});
 
-	let predicted: number = $derived(predict(debounced));
+	const bestModel: RegressionModel = $derived(
+		[linearRegression, piecewiseRegression, exponentialRegression].reduce((a, b) =>
+			a.rSquared > b.rSquared ? a : b
+		)
+	);
+
+	let predicted: number = $derived(predict(bestModel, debounced));
 </script>
 
 <div class="wrapper">
 	<input type="number" {min} bind:value />
 	<p class="status">
-		{format(predicted, 4)}(ms) &nbsp;·&nbsp;
-		{#if linearRegressionModel.rSquared > piecewiseRegressionModel.rSquared}
-			Linear
-		{:else}
-			Piecewise
-		{/if} Regression model
+		{format(predicted, 4)}(ms) &nbsp;·&nbsp; {bestModel.type} Regression model
 	</p>
 </div>
 
