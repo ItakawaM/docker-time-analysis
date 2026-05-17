@@ -1,0 +1,52 @@
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# IDE/Editor files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Node
+node_modules
+npm-debug.log
+yarn-error.log
+package-lock.json
+pnpm-lock.yaml
+
+# Frontend build artifacts (will be rebuilt)
+frontend/dist
+
+# Backend build artifacts (will be rebuilt)
+backend/server
+backend/server.exe
+*.o
+*.a
+
+# Go cache
+.cache
+.go-cache
+
+# Documentation
+README.md
+README/
+LICENSE
+docs/
+
+# Data files (keep minimal)
+data/
+*.csv
+*.log
+
+# Temporary files
+.tmp
+*.bak
+Thumbs.db
+
+# OS files
+.env.local
+.env.*.local
