@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { ComputeResponse, SignificanceResponse, UploadResponse } from './lib/api/models';
-	import { postSignificance } from './lib/api/services';
 	import CorrelationTable from './lib/components/CorrelationTable.svelte';
 	import CSVFileInput from './lib/components/CSVFileInput.svelte';
 	import PredictionInput from './lib/components/PredictionInput.svelte';
@@ -75,8 +74,9 @@
 	<p class="instructions">Predict startup time</p>
 	<section>
 		<PredictionInput
-			linearRegressionModel={computeResponse.regressionData.linearRegression}
-			piecewiseRegressionModel={computeResponse.regressionData.piecewiseRegression}
+			linearRegression={computeResponse.regressionData.linearRegression}
+			piecewiseRegression={computeResponse.regressionData.piecewiseRegression}
+			exponentialRegression={computeResponse.regressionData.exponentialRegression}
 		/>
 	</section>
 {/if}

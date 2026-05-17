@@ -155,6 +155,7 @@ func (ct *CorrelationTable) ComputeLinearRegression() LinearRegression {
 	beta, alpha := stat.LinearRegression(x, y, weights, false)
 
 	linearRegression := LinearRegression{
+		Type:             "Linear",
 		AlphaCoefficient: alpha,
 		BetaCoefficient:  beta,
 	}
@@ -186,6 +187,7 @@ func (ct *CorrelationTable) ComputeExponentialRegression() (ExponentialRegressio
 	beta := math.Pow(10, lgB)
 
 	exponentialRegression := ExponentialRegression{
+		Type:             "Exponential",
 		AlphaCoefficient: alpha,
 		BetaCoefficient:  beta,
 	}
@@ -206,28 +208,36 @@ func (ct *CorrelationTable) ComputePiecewiseRegression() (PiecewiseRegression, e
 	best := PiecewiseRegression{}
 	found := false
 
-	for split := 2; split <= n-3; split++ {
+	for split := 2; split <= n-2; split++ {
 		// Compute the left part - linear
 		xL, yL, weightsL := x[:split], y[:split], weights[:split]
 		betaL, alphaL := stat.LinearRegression(xL, yL, weightsL, false)
 
-		// Compute the right part - exponential
+		// Compute the right part - linear
+		breakpointX := x[split-1]
+		yAtBreakpoint := alphaL*breakpointX + betaL
+
 		xR, yR, weightsR := x[split:], y[split:], weights[split:]
 
-		alphaR, betaR, err := fitExponentialSegment(xR, yR, weightsR)
-		if err != nil {
-			return PiecewiseRegression{}, fmt.Errorf("cannot compute piecewise function")
+		shiftedX := make([]float64, len(xR))
+		shiftedY := make([]float64, len(yR))
+		for i := range xR {
+			shiftedX[i] = xR[i] - breakpointX
+			shiftedY[i] = yR[i] - yAtBreakpoint
 		}
+
+		_, alphaR := stat.LinearRegression(shiftedX, shiftedY, weightsR, true)
+		betaR := yAtBreakpoint - alphaR*breakpointX
 
 		pf := PiecewiseRegression{
-			Breakpoint:                  x[split-1],
-			LinearAlphaCoefficient:      alphaL,
-			LinearBetaCoefficient:       betaL,
-			ExponentialAlphaCoefficient: alphaR,
-			ExponentialBetaCoefficient:  betaR,
+			Breakpoint:            breakpointX,
+			LeftAlphaCoefficient:  alphaL,
+			LeftBetaCoefficient:   betaL,
+			RightAlphaCoefficient: alphaR,
+			RightBetaCoefficient:  betaR,
 		}
-		_, _, Qo := ct.computeVariations(pf.Predict)
 
+		_, _, Qo := ct.computeVariations(pf.Predict)
 		if Qo < bestQo {
 			bestQo = Qo
 			best = pf
@@ -239,29 +249,12 @@ func (ct *CorrelationTable) ComputePiecewiseRegression() (PiecewiseRegression, e
 		return PiecewiseRegression{}, fmt.Errorf("no valid breakpoint found")
 	}
 
+	best.Type = "Piecewise"
 	best.RSquared = ct.ComputeRSquared(best.Predict)
 	_, _, Qo := ct.computeVariations(best.Predict)
 	best.Qo = Qo
 
 	return best, nil
-}
-
-func fitExponentialSegment(x []float64, y []float64, weights []float64) (alpha float64, beta float64, err error) {
-	logY := make([]float64, len(y))
-	for i, yi := range y {
-		if yi <= 0 {
-			return 0, 0, fmt.Errorf("y must be positive")
-		}
-
-		logY[i] = math.Log10(yi)
-	}
-
-	lgB, lgA := stat.LinearRegression(x, logY, weights, false)
-
-	alpha = math.Pow(10, lgA)
-	beta = math.Pow(10, lgB)
-
-	return
 }
 
 func (ct *CorrelationTable) ComputeRSquared(predictFunction func(x float64) float64) (rSquared float64) {

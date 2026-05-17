@@ -1,3 +1,5 @@
+import type { ExponentialRegression, LinearRegression, PiecewiseRegression } from './regressions';
+
 export type UploadResponse = {
 	message: string;
 	parsedRows: number;
@@ -30,23 +32,7 @@ export type RegressionData = {
 
 	linearRegression: LinearRegression;
 	piecewiseRegression: PiecewiseRegression;
-};
-
-export type PiecewiseRegression = {
-	breakpoint: number;
-	linearAlphaCoefficient: number;
-	linearBetaCoefficient: number;
-	exponentialAlphaCoefficient: number;
-	exponentialBetaCoefficient: number;
-	rSquared: number;
-	qo: number;
-};
-
-export type LinearRegression = {
-	alphaCoefficient: number;
-	betaCoefficient: number;
-	rSquared: number;
-	qo: number;
+	exponentialRegression: ExponentialRegression;
 };
 
 export type SignificanceRequest = {
@@ -56,6 +42,7 @@ export type SignificanceRequest = {
 export type SignificanceResponse = {
 	fisherLinear: StatTestResult;
 	fisherPiecewise: StatTestResult;
+	fisherExponential: StatTestResult;
 	pearson: StatTestResult;
 };
 

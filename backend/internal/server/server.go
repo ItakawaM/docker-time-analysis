@@ -22,9 +22,10 @@ type Server struct {
 	data []*parse.DockerEntry
 
 	// set after /compute
-	table               *compute.CorrelationTable
-	linearRegression    compute.LinearRegression
-	piecewiseRegression compute.PiecewiseRegression
+	table                 *compute.CorrelationTable
+	linearRegression      compute.LinearRegression
+	piecewiseRegression   compute.PiecewiseRegression
+	exponentialRegression compute.ExponentialRegression
 }
 
 func NewServer() *Server {

@@ -23,8 +23,9 @@ type RegressionData struct {
 	YPoints []float64 `json:"yPoints"`
 	XPoints []float64 `json:"xPoints"`
 
-	LinearRegression    compute.LinearRegression    `json:"linearRegression"`
-	PiecewiseRegression compute.PiecewiseRegression `json:"piecewiseRegression"`
+	LinearRegression      compute.LinearRegression      `json:"linearRegression"`
+	PiecewiseRegression   compute.PiecewiseRegression   `json:"piecewiseRegression"`
+	ExponentialRegression compute.ExponentialRegression `json:"exponentialRegression"`
 }
 
 type CorrelationTableData struct {
@@ -44,13 +45,16 @@ type SignificanceRequest struct {
 }
 
 type SignificanceResponse struct {
-	FisherLinear    compute.StatTestResult `json:"fisherLinear"`
-	FisherPiecewise compute.StatTestResult `json:"fisherPiecewise"`
-	Pearson         compute.StatTestResult `json:"pearson"`
+	FisherLinear      compute.StatTestResult `json:"fisherLinear"`
+	FisherPiecewise   compute.StatTestResult `json:"fisherPiecewise"`
+	FisherExponential compute.StatTestResult `json:"fisherExponential"`
+	Pearson           compute.StatTestResult `json:"pearson"`
 }
 
 func NewComputeResponse(sample []*parse.DockerEntry, table *compute.CorrelationTable,
-	linearRegression compute.LinearRegression, piecewiseRegression compute.PiecewiseRegression) *ComputeResponse {
+	linearRegression compute.LinearRegression, piecewiseRegression compute.PiecewiseRegression,
+	exponentialRegression compute.ExponentialRegression,
+) *ComputeResponse {
 	yPoints, xPoints := make([]float64, len(sample)), make([]float64, len(sample))
 	for i := range sample {
 		yPoints[i] = sample[i].StartupTime
@@ -67,18 +71,11 @@ func NewComputeResponse(sample []*parse.DockerEntry, table *compute.CorrelationT
 			ConditionalMeanY: table.GetConditionalMeanY(),
 		},
 		RegressionData: RegressionData{
-			YPoints:             yPoints,
-			XPoints:             xPoints,
-			LinearRegression:    linearRegression,
-			PiecewiseRegression: piecewiseRegression,
+			YPoints:               yPoints,
+			XPoints:               xPoints,
+			LinearRegression:      linearRegression,
+			PiecewiseRegression:   piecewiseRegression,
+			ExponentialRegression: exponentialRegression,
 		},
-	}
-}
-
-func NewSignificanceResponse(fisherLinear compute.StatTestResult, fisherPiecewise compute.StatTestResult, pearson compute.StatTestResult) *SignificanceResponse {
-	return &SignificanceResponse{
-		FisherLinear:    fisherLinear,
-		FisherPiecewise: fisherPiecewise,
-		Pearson:         pearson,
 	}
 }
