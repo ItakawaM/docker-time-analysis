@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/ItakawaM/docker-time-analysis/internal/compute"
@@ -56,11 +57,21 @@ func (s *Server) InitAndServe(port int) {
 		s.mux.Handle("GET /assets/", fileServer)
 		// Serve index.html for root and all other paths (SPA fallback)
 		s.mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
-			// Try to serve the file if it exists
-			filePath := filepath.Join(distPath, r.URL.Path)
-			if _, err := os.Stat(filePath); err == nil && r.URL.Path != "/" {
-				fileServer.ServeHTTP(w, r)
-				return
+			// Try to serve the file if it exists and stays within distPath
+			cleanPath := filepath.Clean("/" + r.URL.Path)
+			relativePath := strings.TrimPrefix(cleanPath, "/")
+			filePath := filepath.Join(distPath, relativePath)
+
+			absDistPath, distErr := filepath.Abs(distPath)
+			absFilePath, fileErr := filepath.Abs(filePath)
+			isWithinDist := distErr == nil && fileErr == nil &&
+				(absFilePath == absDistPath || strings.HasPrefix(absFilePath, absDistPath+string(os.PathSeparator)))
+
+			if r.URL.Path != "/" && isWithinDist {
+				if _, err := os.Stat(absFilePath); err == nil {
+					fileServer.ServeHTTP(w, r)
+					return
+				}
 			}
 			// Otherwise, serve index.html for SPA routing
 			http.ServeFile(w, r, filepath.Join(distPath, "index.html"))
