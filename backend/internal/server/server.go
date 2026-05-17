@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/ItakawaM/docker-time-analysis/internal/compute"
@@ -40,11 +43,42 @@ func NewServer() *Server {
 }
 
 // InitAndServe initializes HTTP routes and starts listening for requests on the specified port.
-// It registers handlers for /upload, /compute, and /compute/significance endpoints.
+// It registers handlers for /upload, /compute, /compute/significance endpoints, and serves static files.
 func (s *Server) InitAndServe(port int) {
-	s.mux.HandleFunc("POST /upload", s.HandleUpload)
-	s.mux.HandleFunc("POST /compute", s.HandleCompute)
-	s.mux.HandleFunc("POST /compute/significance", s.HandleSignificance)
+	s.mux.HandleFunc("POST /api/upload", s.HandleUpload)
+	s.mux.HandleFunc("POST /api/compute", s.HandleCompute)
+	s.mux.HandleFunc("POST /api/compute/significance", s.HandleSignificance)
+
+	// Serve static files from the dist directory
+	distPath := "/app/dist"
+	if _, err := os.Stat(distPath); err == nil {
+		fileServer := http.FileServer(http.Dir(distPath))
+		// Serve static assets with the /assets path
+		s.mux.Handle("GET /assets/", fileServer)
+		// Serve index.html for root and all other paths (SPA fallback)
+		s.mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
+			// Try to serve the file if it exists and stays within distPath
+			cleanPath := filepath.Clean("/" + r.URL.Path)
+			relativePath := strings.TrimPrefix(cleanPath, "/")
+			filePath := filepath.Join(distPath, relativePath)
+
+			absDistPath, distErr := filepath.Abs(distPath)
+			absFilePath, fileErr := filepath.Abs(filePath)
+			isWithinDist := distErr == nil && fileErr == nil &&
+				(absFilePath == absDistPath || strings.HasPrefix(absFilePath, absDistPath+string(os.PathSeparator)))
+
+			if r.URL.Path != "/" && isWithinDist {
+				if _, err := os.Stat(absFilePath); err == nil {
+					fileServer.ServeHTTP(w, r)
+					return
+				}
+			}
+			// Otherwise, serve index.html for SPA routing
+			http.ServeFile(w, r, filepath.Join(distPath, "index.html"))
+		})
+	} else {
+		log.Printf("Warning: dist directory not found at %s\n", distPath)
+	}
 
 	log.Printf("Listening on :%d\n", port)
 
