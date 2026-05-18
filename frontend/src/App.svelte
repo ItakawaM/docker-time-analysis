@@ -4,6 +4,7 @@
 	import CSVFileInput from './lib/components/CSVFileInput.svelte';
 	import PredictionInput from './lib/components/PredictionInput.svelte';
 	import RegressionPlot from './lib/components/RegressionPlot.svelte';
+	import RegressionTable from './lib/components/RegressionTable.svelte';
 	import SampleSizeSlider from './lib/components/SampleSizeSlider.svelte';
 	import SignificanceLevelSlider from './lib/components/SignificanceLevelSlider.svelte';
 	import SignificanceTable from './lib/components/SignificanceTable.svelte';
@@ -67,6 +68,11 @@
 	<section>
 		<CorrelationTable data={computeResponse} />
 		<RegressionPlot data={computeResponse} />
+		<RegressionTable
+			linearRegression={computeResponse.regressionData.linearRegression}
+			piecewiseRegression={computeResponse.regressionData.piecewiseRegression}
+			exponentialRegression={computeResponse.regressionData.exponentialRegression}
+		/>
 	</section>
 {/if}
 
@@ -96,9 +102,9 @@
 {#if significanceResponse}
 	<p class="instructions">Regression model validation results</p>
 	<section>
-	{#key significanceResponse}
-				<SignificanceTable data={significanceResponse} />
-	{/key}
+		{#key significanceResponse}
+			<SignificanceTable data={significanceResponse} />
+		{/key}
 	</section>
 {/if}
 

@@ -12,6 +12,7 @@ export type LinearRegression = {
 	betaCoefficient: number;
 	rSquared: number;
 	qo: number;
+	qp: number;
 };
 
 export type ExponentialRegression = {
@@ -20,6 +21,7 @@ export type ExponentialRegression = {
 	betaCoefficient: number;
 	rSquared: number;
 	qo: number;
+	qp: number;
 };
 
 export type PiecewiseRegression = {
@@ -31,6 +33,7 @@ export type PiecewiseRegression = {
 	rightBetaCoefficient: number;
 	rSquared: number;
 	qo: number;
+	qp: number;
 };
 
 export function predict(model: RegressionModel, x: number): number {
