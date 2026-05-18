@@ -2,11 +2,44 @@
 
 Statistical analysis tool for Docker container startup times using regression modeling and interactive visualizations.
 
+## Features
+
+- CSV file upload and parsing
+- Statistical analysis (correlation tables, descriptive statistics)
+- Three regression model types: Linear, Exponential, Piecewise
+- Statistical significance testing (R², Residual Variation, F-Stat Test, Pearson Coefficient)
+- Interactive charts and visualizations with ECharts
+
+## Collected Data
+
+The data provided in [`/data`](/data) was collected inside a virtual machine (VMWare) running Ubuntu Server 24.04 LTS with the following configurations:
+
+- Intel Core i5-10300H 4 Cores
+- 8 GB RAM
+- 80 GB SSD
+
+System degradation at around 1000 Alpine Linux containers can be explained by resource exhaustion to create and/or sustain Docker containers.
+
+Users are free to collect their own data by modifying/running [`/data/collect_data.sh`](/data/collect_data.sh)
+
+## Screenshots
+
+![overview](/README/overview.gif)
+<p align="center">Overview of the application</p>
+
+![chart](/README/chart.png)
+<p align="center">Visualization of regression models</p>
+
+![regression models data](/README/regression_models_data.png)
+<p align="center">Regression models data</p>
+
+![regression models validation](/README/regression_models_validation.png)
+<p align="center">Regression models validation</p>
+
 ## Tech Stack
 
 - **Backend**: Go, Gonum (statistical computing)
 - **Frontend**: Svelte, TypeScript, ECharts
-- **Other**: Go CSV parser
 
 ## Project Structure
 
@@ -23,28 +56,6 @@ frontend/
 └── vite.config.ts    - Build configuration
 data/                 - Sample CSV data files
 ```
-
-## Features
-
-- CSV file upload and parsing
-- Statistical analysis (correlation tables, descriptive statistics)
-- Three regression model types: Linear, Exponential, Piecewise
-- Statistical significance testing (R², Residual Variation, F-Stat Test, Pearson Coefficient)
-- Interactive charts and visualizations with ECharts
-
-## Screenshots
-
-![overview](/README/overview.gif)
-<p align="center">Overview of the application</p>
-
-![chart](/README/chart.png)
-<p align="center">Visualization of regression models</p>
-
-![regression models data](/README/regression_models_data.png)
-<p align="center">Regression models data</p>
-
-![regression models validation](/README/regression_models_validation.png)
-<p align="center">Regression models validation</p>
 
 ## Getting Started
 
@@ -96,4 +107,4 @@ The server runs on `http://localhost:8080` by default.
 
 ## License
 
-MIT License — see [LICENSE](LICENSE)
+MIT License — see [`LICENSE`](LICENSE)
