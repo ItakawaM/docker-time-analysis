@@ -74,7 +74,11 @@ func NewCorrelationTable(data []*parse.DockerEntry) (*CorrelationTable, error) {
 		}
 	}
 
-	intervals, _ := SturgesCoeff(len(data))
+	intervals, err := SturgesCoeff(len(data))
+	if err != nil {
+		return nil, err
+	}
+
 	xIntervals, err := buildIntervals(minX, maxX, intervals)
 	if err != nil {
 		return nil, err
@@ -290,9 +294,11 @@ type StatTestResult struct {
 // ComputeFisherStatistics computes Fisher's F-test statistic for assessing model adequacy at a given significance level.
 // It returns the empirical test value, critical value, and a boolean indicating if the model is adequate.
 func (ct *CorrelationTable) ComputeFisherStatistics(predictFunction func(x float64) float64,
-	significanceLevel float64, mParams int) StatTestResult {
+	significanceLevel float64) StatTestResult {
 	_, Qp, Qo := ct.computeVariations(predictFunction)
-	df1, df2 := float64(mParams-1), float64(mParams)
+	m := len(ct.xIntervals)
+
+	df1, df2 := float64(m-1), float64(ct.totalValues-m)
 	empirical := Qp * df2 / (Qo * df1)
 
 	critical := distuv.F{

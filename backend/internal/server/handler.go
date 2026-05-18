@@ -165,9 +165,9 @@ func (s *Server) HandleSignificance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fisherLinear := table.ComputeFisherStatistics(linearRegression.Predict, request.SignificanceLevel, 2)
-	fisherPiecewise := table.ComputeFisherStatistics(piecewiseRegression.Predict, request.SignificanceLevel, 5)
-	fisherExponential := table.ComputeFisherStatistics(exponentialRegression.Predict, request.SignificanceLevel, 2)
+	fisherLinear := table.ComputeFisherStatistics(linearRegression.Predict, request.SignificanceLevel)
+	fisherPiecewise := table.ComputeFisherStatistics(piecewiseRegression.Predict, request.SignificanceLevel)
+	fisherExponential := table.ComputeFisherStatistics(exponentialRegression.Predict, request.SignificanceLevel)
 	pearson := table.ComputePearsonCorrelation(request.SignificanceLevel)
 
 	if err := s.writeJSONResponse(w, http.StatusOK, &SignificanceResponse{
