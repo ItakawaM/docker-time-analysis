@@ -96,7 +96,9 @@
 {#if significanceResponse}
 	<p class="instructions">Regression model validation results</p>
 	<section>
-		<SignificanceTable data={significanceResponse} />
+	{#key significanceResponse}
+				<SignificanceTable data={significanceResponse} />
+	{/key}
 	</section>
 {/if}
 
