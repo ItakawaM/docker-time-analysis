@@ -169,8 +169,8 @@ func (ct *CorrelationTable) ComputeLinearRegression() LinearRegression {
 		BetaCoefficient:  beta,
 	}
 	linearRegression.RSquared = ct.ComputeRSquared(linearRegression.Predict)
-	_, _, Qo := ct.computeVariations(linearRegression.Predict)
-	linearRegression.Qo = Qo
+	_, Qp, Qo := ct.computeVariations(linearRegression.Predict)
+	linearRegression.Qo, linearRegression.Qp = Qo, Qp
 
 	return linearRegression
 }
@@ -203,8 +203,8 @@ func (ct *CorrelationTable) ComputeExponentialRegression() (ExponentialRegressio
 		BetaCoefficient:  beta,
 	}
 	exponentialRegression.RSquared = ct.ComputeRSquared(exponentialRegression.Predict)
-	_, _, Qo := ct.computeVariations(exponentialRegression.Predict)
-	exponentialRegression.Qo = Qo
+	_, Qp, Qo := ct.computeVariations(exponentialRegression.Predict)
+	exponentialRegression.Qo, exponentialRegression.Qp = Qo, Qp
 
 	return exponentialRegression, nil
 }
@@ -264,8 +264,8 @@ func (ct *CorrelationTable) ComputePiecewiseRegression() (PiecewiseRegression, e
 
 	best.Type = "Piecewise"
 	best.RSquared = ct.ComputeRSquared(best.Predict)
-	_, _, Qo := ct.computeVariations(best.Predict)
-	best.Qo = Qo
+	_, Qp, Qo := ct.computeVariations(best.Predict)
+	best.Qo, best.Qp = Qo, Qp
 
 	return best, nil
 }
@@ -299,7 +299,7 @@ func (ct *CorrelationTable) ComputeFisherStatistics(predictFunction func(x float
 	m := len(ct.xIntervals)
 
 	df1, df2 := float64(m-1), float64(ct.totalValues-m)
-	empirical := Qp * df2 / (Qo * df1)
+	empirical := (Qp * df2) / (Qo * df1)
 
 	critical := distuv.F{
 		D1: df1,

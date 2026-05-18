@@ -8,13 +8,14 @@ type Regression interface {
 }
 
 // LinearRegression represents a linear regression model of the form y = alpha*x + beta.
-// It contains coefficients, R-squared goodness-of-fit, and residual sum of squares (Qo).
+// It contains coefficients, R-squared goodness-of-fit, and residual sum of squares (Qo), and regression sum of squares (Qp).
 type LinearRegression struct {
 	Type             string  `json:"type"`
 	AlphaCoefficient float64 `json:"alphaCoefficient"`
 	BetaCoefficient  float64 `json:"betaCoefficient"`
 	RSquared         float64 `json:"rSquared"`
 	Qo               float64 `json:"qo"`
+	Qp               float64 `json:"qp"`
 }
 
 // Predict calculates the predicted value for input x using the linear regression equation.
@@ -23,7 +24,8 @@ func (lf *LinearRegression) Predict(x float64) float64 {
 }
 
 // PiecewiseRegression represents a piecewise linear regression model with two segments.
-// It defines left and right linear equations separated by a breakpoint, with R-squared and residual sum of squares (Qo).
+// It defines left and right linear equations separated by a breakpoint, with R-squared, residual sum of squares (Qo),
+// and regression sum of squares (Qp).
 type PiecewiseRegression struct {
 	Type                  string  `json:"type"`
 	Breakpoint            float64 `json:"breakpoint"`
@@ -33,6 +35,7 @@ type PiecewiseRegression struct {
 	RightBetaCoefficient  float64 `json:"rightBetaCoefficient"`
 	RSquared              float64 `json:"rSquared"`
 	Qo                    float64 `json:"qo"`
+	Qp                    float64 `json:"qp"`
 }
 
 // Predict calculates the predicted value for input x using the appropriate piecewise regression equation based on the breakpoint.
@@ -45,13 +48,14 @@ func (pf PiecewiseRegression) Predict(x float64) float64 {
 }
 
 // ExponentialRegression represents an exponential regression model of the form y = beta * (alpha ^ x).
-// It contains coefficients, R-squared goodness-of-fit, and residual sum of squares (Qo).
+// It contains coefficients, R-squared goodness-of-fit, residual sum of squares (Qo), and regression sum of squares (Qp).
 type ExponentialRegression struct {
 	Type             string  `json:"type"`
 	AlphaCoefficient float64 `json:"alphaCoefficient"`
 	BetaCoefficient  float64 `json:"betaCoefficient"`
 	RSquared         float64 `json:"rSquared"`
 	Qo               float64 `json:"qo"`
+	Qp               float64 `json:"qp"`
 }
 
 // Predict calculates the predicted value for input x using the exponential regression equation.
